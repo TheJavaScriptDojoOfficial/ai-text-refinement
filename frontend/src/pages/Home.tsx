@@ -1,39 +1,31 @@
 import React from 'react';
 import { useRefineStore } from './storeProxy';
 import TextInput from '../components/TextInput';
-import RefineControls from '../components/RefineControls';
-import OutputPanel from '../components/OutputPanel';
+import RefinePanel from '../components/refiner/RefinePanel';
+import ResultPanel from '../components/refiner/ResultPanel';
 import { Card } from '../components/Common';
 
 const Home: React.FC = () => {
   const {
     input,
     output,
-    tones,
-    length,
-    outputFormat,
-    preserveMeaning,
-    preserveKeywords,
-    preserveNamesAndIds,
-    keepTechnicalTerms,
+    mode,
+    exactness,
     customInstruction,
-    preset,
+    lastMetadata,
     isLoading,
     error,
     setInput,
-    toggleTone,
-    setLength,
-    setOutputFormat,
-    setPreserveMeaning,
-    setPreserveKeywords,
-    setPreserveNamesAndIds,
-    setKeepTechnicalTerms,
+    setMode,
+    setExactness,
     setCustomInstruction,
-    setPreset,
-    applyPresetDefaults,
-    clearControls,
-    runRefinement
+    runRefinement,
+    useOutput,
   } = useRefineStore();
+
+  const canRefine =
+    input.trim().length > 0 &&
+    (mode !== 'custom' || customInstruction.trim().length > 0);
 
   return (
     <main className="mx-auto flex min-h-screen max-w-5xl flex-col gap-6 px-4 py-8">
@@ -42,8 +34,7 @@ const Home: React.FC = () => {
           AI Text Refinement
         </h1>
         <p className="max-w-2xl text-sm text-slate-400">
-          Paste a message, choose a style, and let your local model rewrite it to be clearer,
-          more polite, or more professional.
+          Paste a message, choose a refinement mode, and let your local model rewrite it.
         </p>
       </header>
 
@@ -52,37 +43,28 @@ const Home: React.FC = () => {
           <TextInput value={input} onChange={setInput} />
         </Card>
         <Card>
-          <OutputPanel value={output} isLoading={isLoading} error={error} />
+          <ResultPanel
+            value={output}
+            isLoading={isLoading}
+            error={error}
+            metadata={lastMetadata}
+            onUseOutput={useOutput}
+          />
         </Card>
       </div>
 
-      <RefineControls
-        tones={tones}
-        length={length}
-        outputFormat={outputFormat}
-        preserveMeaning={preserveMeaning}
-        preserveKeywords={preserveKeywords}
-        preserveNamesAndIds={preserveNamesAndIds}
-        keepTechnicalTerms={keepTechnicalTerms}
+      <RefinePanel
+        mode={mode}
+        exactness={exactness}
         customInstruction={customInstruction}
-        preset={preset}
-        onToggleTone={toggleTone}
-        onLengthChange={setLength}
-        onOutputFormatChange={setOutputFormat}
-        onPreserveMeaningChange={setPreserveMeaning}
-        onPreserveKeywordsChange={setPreserveKeywords}
-        onPreserveNamesAndIdsChange={setPreserveNamesAndIds}
-        onKeepTechnicalTermsChange={setKeepTechnicalTerms}
+        onModeChange={setMode}
+        onExactnessChange={setExactness}
         onCustomInstructionChange={setCustomInstruction}
-        onPresetChange={setPreset}
-        onApplyPresetDefaults={applyPresetDefaults}
-        onClearControls={clearControls}
         onRefine={runRefinement}
-        disabled={isLoading || !input.trim()}
+        disabled={isLoading || !canRefine}
       />
     </main>
   );
 };
 
 export default Home;
-

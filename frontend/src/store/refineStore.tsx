@@ -2,8 +2,10 @@ import React, { createContext, useContext, useState, useCallback } from "react";
 import type {
   RefinementTone,
   RefineRequest,
+  RefineResultMetadata,
   LengthOption,
   OutputFormatOption,
+  ExactnessOption,
 } from "../types/refine";
 import { refineText } from "../services/api";
 import { normalizeWhitespace } from "../utils/format";
@@ -12,10 +14,14 @@ import {
   type PresetKey,
   type RefinementPreset,
 } from "../constants/presets";
+import type { RefinementModeKey } from "../config/refinementModes";
 
 interface RefineState {
   input: string;
   output: string;
+  mode: RefinementModeKey;
+  exactness: ExactnessOption;
+  lastMetadata: RefineResultMetadata | null;
   tones: RefinementTone[];
   length: LengthOption;
   outputFormat: OutputFormatOption;
@@ -31,6 +37,8 @@ interface RefineState {
 
 interface RefineContextValue extends RefineState {
   setInput: (value: string) => void;
+  setMode: (mode: RefinementModeKey) => void;
+  setExactness: (value: ExactnessOption) => void;
   toggleTone: (tone: RefinementTone) => void;
   setLength: (length: LengthOption) => void;
   setOutputFormat: (format: OutputFormatOption) => void;
@@ -43,6 +51,7 @@ interface RefineContextValue extends RefineState {
   applyPresetDefaults: () => void;
   clearControls: () => void;
   runRefinement: () => Promise<void>;
+  useOutput: () => void;
 }
 
 const RefineContext = createContext<RefineContextValue | undefined>(undefined);
@@ -56,6 +65,9 @@ export const RefineProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const [input, setInput] = useState("");
   const [output, setOutput] = useState("");
+  const [mode, setMode] = useState<RefinementModeKey>("clarity");
+  const [exactness, setExactness] = useState<ExactnessOption>("balanced");
+  const [lastMetadata, setLastMetadata] = useState<RefineResultMetadata | null>(null);
   const [tones, setTones] = useState<RefinementTone[]>(
     defaultPreset.tone as RefinementTone[],
   );
@@ -124,35 +136,50 @@ export const RefineProvider: React.FC<{ children: React.ReactNode }> = ({
 
     setIsLoading(true);
     setError(null);
+    setLastMetadata(null);
 
     try {
       const payload: RefineRequest = {
         input_text: text,
-        tone: tones.length ? tones : ["professional"],
+        mode,
+        exactness,
+        custom_instruction: mode === "custom" ? customInstruction || undefined : (customInstruction || undefined),
+        tone: [],
         length,
         output_format: outputFormat,
-        preserve_meaning: true,
+        preserve_meaning: preserveMeaning,
         preserve_keywords: preserveKeywords,
         preserve_names_and_ids: preserveNamesAndIds,
         keep_technical_terms: keepTechnicalTerms,
-        custom_instruction: customInstruction || undefined,
-        preset: preset === "custom" ? undefined : preset,
+        preset: undefined,
       };
 
       const response = await refineText(payload);
       setOutput(response.refined_text);
+      setLastMetadata({
+        mode: response.mode ?? mode,
+        validation_passed: response.validation_passed,
+        entities_preserved: response.entities_preserved,
+      });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unknown error");
     } finally {
       setIsLoading(false);
     }
-  }, [input, tones]);
+  }, [input, mode, exactness, customInstruction, preserveMeaning, preserveKeywords, preserveNamesAndIds, keepTechnicalTerms, length, outputFormat]);
+
+  const useOutput = useCallback(() => {
+    if (output) setInput(output);
+  }, [output]);
 
   return (
     <RefineContext.Provider
       value={{
         input,
         output,
+        mode,
+        exactness,
+        lastMetadata,
         tones,
         length,
         outputFormat,
@@ -165,6 +192,8 @@ export const RefineProvider: React.FC<{ children: React.ReactNode }> = ({
         isLoading,
         error,
         setInput,
+        setMode,
+        setExactness,
         toggleTone,
         setLength,
         setOutputFormat,
@@ -177,6 +206,7 @@ export const RefineProvider: React.FC<{ children: React.ReactNode }> = ({
         applyPresetDefaults,
         clearControls,
         runRefinement,
+        useOutput,
       }}
     >
       {children}

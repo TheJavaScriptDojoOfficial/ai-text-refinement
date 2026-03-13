@@ -1,5 +1,7 @@
 from typing import Iterable, Tuple, Optional
 
+from ..refinement_modes import REFINEMENT_MODES, VALID_MODES
+
 
 def _normalize_tones(tones: Optional[Iterable[str]]) -> str:
     if not tones:
@@ -90,6 +92,56 @@ def build_refinement_prompts(
 
     user_prompt = f"Refine the following message:\n\n{input_text.strip()}"
 
+    return system_prompt, user_prompt
+
+
+def build_refinement_prompts_from_mode(
+    *,
+    input_text: str,
+    mode: str,
+    custom_instruction: Optional[str] = None,
+    exactness: str = "balanced",
+) -> Tuple[str, str]:
+    """
+    Build system and user prompts from a refinement mode.
+    Deterministic, strict instructions. Preserves placeholders and technical meaning.
+    """
+    if mode not in VALID_MODES:
+        mode = "clarity"
+    config = REFINEMENT_MODES.get(mode, REFINEMENT_MODES["clarity"])
+    instruction = (config.get("instruction") or "").strip()
+    if mode == "custom" and (custom_instruction or "").strip():
+        instruction = custom_instruction.strip()
+
+    constraints = [
+        "Do not invent facts or add extra content.",
+        "Return only the rewritten text. Do not explain your changes.",
+        "Do not include introductions or commentary.",
+        'Do NOT modify placeholders like __URL_1__, __EMAIL_1__, __ID_1__, __NUMBER_1__, or similar; treat them as protected tokens.',
+        "Preserve technical meaning and do not change entity values.",
+    ]
+
+    if exactness == "strict":
+        constraints.append("Preserve structure and meaning as closely as possible; only change what is necessary for the requested refinement.")
+    elif exactness == "loose":
+        constraints.append("You may rephrase more freely while still following the main instruction.")
+
+    system_lines = [
+        "You are a careful text refinement assistant for workplace communication.",
+        "",
+        "Main instruction:",
+        instruction,
+        "",
+        "Follow these rules strictly:",
+    ] + [f"- {rule}" for rule in constraints]
+
+    if mode != "custom" and (custom_instruction or "").strip():
+        system_lines.append("")
+        system_lines.append("Additional user instruction you must follow exactly:")
+        system_lines.append(custom_instruction.strip())
+
+    system_prompt = "\n".join(system_lines)
+    user_prompt = f"Refine the following message:\n\n{input_text.strip()}"
     return system_prompt, user_prompt
 
 
