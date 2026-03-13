@@ -30,7 +30,20 @@ The API server will typically run on `http://localhost:8000`.
 ### API
 
 - `GET /health` – basic health check
-- `POST /refine` – placeholder endpoint that accepts text and refinement options and returns refined text
+- `POST /refine` – calls local Ollama model to refine text
+
+Example request body:
+
+```json
+{
+  "input_text": "Can you send me that report asap?",
+  "tone": ["professional", "polite"],
+  "preserve_meaning": true,
+  "preserve_keywords": true,
+  "output_format": "paragraph",
+  "custom_instruction": "Make it suitable for a message to my manager."
+}
+```
 
 ### Notes
 

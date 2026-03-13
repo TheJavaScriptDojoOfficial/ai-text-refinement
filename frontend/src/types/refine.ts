@@ -1,15 +1,18 @@
 export type RefinementTone = 'polite' | 'concise' | 'professional';
 
-export interface RefinementOptions {
-  tone: RefinementTone;
-}
-
 export interface RefineRequest {
-  text: string;
-  options: RefinementOptions;
+  input_text: string;
+  tone?: string[];
+  preserve_meaning: boolean;
+  preserve_keywords: boolean;
+  output_format: 'paragraph' | 'bullet_points';
+  custom_instruction?: string;
 }
 
 export interface RefineResponse {
-  refinedText: string;
+  output_text: string;
+  model: string;
+  success: boolean;
+  error?: string;
 }
 

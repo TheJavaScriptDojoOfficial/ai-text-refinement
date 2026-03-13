@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
-import type { RefinementTone } from '../types/refine';
+import type { RefinementTone, RefineRequest } from '../types/refine';
 import { refineText } from '../services/api';
 import { normalizeWhitespace } from '../utils/format';
 
@@ -34,11 +34,16 @@ export const RefineProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setError(null);
 
     try {
-      const response = await refineText({
-        text,
-        options: { tone }
-      });
-      setOutput(response.refinedText);
+      const payload: RefineRequest = {
+        input_text: text,
+        tone: ['professional', tone],
+        preserve_meaning: true,
+        preserve_keywords: true,
+        output_format: 'paragraph'
+      };
+
+      const response = await refineText(payload);
+      setOutput(response.output_text);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error');
     } finally {

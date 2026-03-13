@@ -11,11 +11,15 @@ export async function refineText(payload: RefineRequest): Promise<RefineResponse
     body: JSON.stringify(payload)
   });
 
+  const data = (await response.json()) as RefineResponse | { detail?: string };
+
   if (!response.ok) {
-    throw new Error('Failed to refine text');
+    const message =
+      (data as any).error || (data as any).detail || 'Failed to refine text with backend';
+    throw new Error(message);
   }
 
-  return (await response.json()) as RefineResponse;
+  return data as RefineResponse;
 }
 
 export async function checkHealth(): Promise<boolean> {
