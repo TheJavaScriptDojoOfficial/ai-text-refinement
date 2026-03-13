@@ -1,0 +1,6 @@
+/* Placeholder styles for injected UI in content scripts. */
+
+body.ai-text-refiner-active {
+  /* This class can be toggled by the content script when UI is attached. */
+}
+

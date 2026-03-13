@@ -1,0 +1,18 @@
+{
+  "name": "local-ai-text-refiner-extension",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Chrome extension to refine text on any website using a local LLM backend.",
+  "scripts": {
+    "dev": "vite build --watch",
+    "build": "vite build",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/chrome": "^0.0.279",
+    "eslint": "^9.0.0",
+    "prettier": "^3.0.0",
+    "typescript": "^5.0.0",
+    "vite": "^6.0.0"
+  }
+}

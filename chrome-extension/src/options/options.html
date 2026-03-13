@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Local AI Text Refiner Settings</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="options.css" />
+  </head>
+  <body>
+    <main class="container">
+      <h1>Local AI Text Refiner Settings</h1>
+      <section class="field-group">
+        <label for="backend-url">Backend URL</label>
+        <input
+          type="url"
+          id="backend-url"
+          placeholder="http://127.0.0.1:8000"
+        />
+        <p class="hint">
+          Default: <code>http://127.0.0.1:8000</code>
+        </p>
+      </section>
+      <button id="save-button" type="button">Save</button>
+      <p id="status" class="status" aria-live="polite"></p>
+    </main>
+    <script type="module" src="options.js"></script>
+  </body>
+</html>
+
