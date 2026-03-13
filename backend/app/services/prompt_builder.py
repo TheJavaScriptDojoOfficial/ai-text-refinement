@@ -11,11 +11,15 @@ def _normalize_tones(tones: Optional[Iterable[str]]) -> str:
 def build_refinement_prompts(
     *,
     input_text: str,
-    tone: Optional[Iterable[str]],
+    tone: Iterable[str],
+    length: str,
     preserve_meaning: bool,
     preserve_keywords: bool,
+    preserve_names_and_ids: bool,
+    keep_technical_terms: bool,
     output_format: str,
     custom_instruction: Optional[str],
+    preset: Optional[str],
 ) -> Tuple[str, str]:
     """
     Build system and user prompts for refinement.
@@ -29,8 +33,7 @@ def build_refinement_prompts(
 
     constraints = [
         "Do not invent facts.",
-        "Do not change the actual meaning of the message.",
-        "Return only the refined text.",
+        "Return only the rewritten text and nothing else.",
         "Do not include explanations, introductions, or commentary.",
         'Do not prefix with phrases like "Here is the refined version".',
     ]
@@ -40,11 +43,32 @@ def build_refinement_prompts(
 
     if preserve_keywords:
         constraints.append(
-            "Preserve all names, IDs, URLs, numbers, and technical terms; do not replace or remove them."
+            "Preserve important project-specific words and domain-specific keywords."
+        )
+
+    if preserve_names_and_ids:
+        constraints.append(
+            "Preserve all names, IDs, URLs, and numbers exactly; do not replace or remove them."
+        )
+
+    if keep_technical_terms:
+        constraints.append("Keep technical terms unchanged unless there is a clear typo.")
+
+    if length == "shorter":
+        constraints.append(
+            "Make the message shorter while keeping essential meaning and key details."
+        )
+    elif length == "longer":
+        constraints.append(
+            "Make the message slightly longer only to improve clarity, without adding new facts."
+        )
+    else:
+        constraints.append(
+            "Keep approximately the same level of detail as the original message."
         )
 
     system_lines = [
-        "You are a careful text refinement assistant.",
+        "You are a careful text refinement assistant for workplace communication.",
         f"Your goal is to rewrite messages to be {tone_description}.",
         format_description,
         "",
@@ -53,8 +77,13 @@ def build_refinement_prompts(
 
     if custom_instruction:
         system_lines.append("")
-        system_lines.append("Additional user instruction you must follow:")
+        system_lines.append("Additional user instruction you must follow exactly:")
         system_lines.append(custom_instruction.strip())
+
+    # The preset name is not used as an instruction, but can be useful context.
+    if preset:
+        system_lines.append("")
+        system_lines.append(f"(Context: preset selected = {preset})")
 
     system_prompt = "\n".join(system_lines)
 

@@ -7,14 +7,35 @@ from ..schemas.refine import RefineRequest, RefineResponse
 
 async def run_refinement(request: RefineRequest) -> RefineResponse:
     cleaned_text = normalize_whitespace(request.input_text)
+    if not cleaned_text:
+        return RefineResponse(
+            output_text="",
+            model=ollama_settings.model,
+            success=False,
+            error="Input text is empty after trimming.",
+        )
+
+    if len(cleaned_text) < 5:
+        return RefineResponse(
+            output_text="",
+            model=ollama_settings.model,
+            success=False,
+            error="Input text is too short to refine usefully.",
+        )
+
+    tones = request.tone or ["professional"]
 
     system_prompt, user_prompt = build_refinement_prompts(
         input_text=cleaned_text,
-        tone=request.tone,
+        tone=tones,
+        length=request.length,
         preserve_meaning=request.preserve_meaning,
         preserve_keywords=request.preserve_keywords,
+        preserve_names_and_ids=request.preserve_names_and_ids,
+        keep_technical_terms=request.keep_technical_terms,
         output_format=request.output_format,
         custom_instruction=request.custom_instruction,
+        preset=request.preset,
     )
 
     try:
