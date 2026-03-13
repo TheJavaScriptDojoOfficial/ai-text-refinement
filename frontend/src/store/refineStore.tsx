@@ -140,7 +140,7 @@ export const RefineProvider: React.FC<{ children: React.ReactNode }> = ({
       };
 
       const response = await refineText(payload);
-      setOutput(response.output_text);
+      setOutput(response.refined_text);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unknown error");
     } finally {

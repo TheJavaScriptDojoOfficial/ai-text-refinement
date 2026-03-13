@@ -43,9 +43,8 @@ class RefineRequest(BaseModel):
 
 
 class RefineResponse(BaseModel):
-    output_text: str
-    model: str
-    success: bool = True
-    error: Optional[str] = None
+    refined_text: str
+    entities_preserved: bool
+    validation_passed: bool
 
 

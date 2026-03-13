@@ -24,9 +24,8 @@ export interface RefineRequest {
 }
 
 export interface RefineResponse {
-  output_text: string;
-  model: string;
-  success: boolean;
-  error?: string;
+  refined_text: string;
+  entities_preserved: boolean;
+  validation_passed: boolean;
 }
 

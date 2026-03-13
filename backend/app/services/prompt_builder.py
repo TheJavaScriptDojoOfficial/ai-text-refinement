@@ -36,6 +36,7 @@ def build_refinement_prompts(
         "Return only the rewritten text and nothing else.",
         "Do not include explanations, introductions, or commentary.",
         'Do not prefix with phrases like "Here is the refined version".',
+        'Do NOT modify placeholders like __URL_1__, __EMAIL_1__, __ID_1__, __NUMBER_1__, or similar; treat them as protected tokens.',
     ]
 
     if preserve_meaning:
