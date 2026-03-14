@@ -2,7 +2,9 @@
 
 A **local-first** AI text refinement app. Paste text, pick a refinement mode (grammar, clarity, professional, Teams, email, Jira, etc.), and get a rewritten version using a **local LLM** via [Ollama](https://ollama.com)—no cloud API keys required.
 
-**Stack:** React + Vite + TypeScript + Tailwind (frontend) · Python + FastAPI (backend) · Ollama (local LLM)
+The repo also includes a **Chrome extension** that adds a refine trigger to text fields on any website and sends the text to the same local backend for refinement, then replaces the field content with the result.
+
+**Stack:** React + Vite + TypeScript + Tailwind (frontend) · Python + FastAPI (backend) · Ollama (local LLM) · Chrome extension (TypeScript + Vite)
 
 ---
 
@@ -146,6 +148,36 @@ Open **http://localhost:5173** in your browser, paste text, choose a mode (and o
 
 ---
 
+## 7. Chrome extension (optional)
+
+A Chrome extension lets you refine text **directly in inputs and textareas** on any website using the same local backend.
+
+### What it does
+
+- Detects supported text fields (textarea, text inputs) when you focus them.
+- Shows a floating **Refine** trigger (✨) when the field has text.
+- Opens a tone popup (Professional, Friendly, Concise, Grammar, etc.) on click.
+- Sends the field text to your local backend and **replaces** the field with the refined result.
+
+### Quick start
+
+1. **Backend** must be running (e.g. `http://localhost:8000`); see [Run the backend](#4-run-the-backend-python--fastapi).
+2. **Build the extension:**
+   ```bash
+   cd chrome-extension
+   npm install
+   npm run build
+   ```
+3. **Load in Chrome:** Open `chrome://extensions/` → enable **Developer mode** → **Load unpacked** → select the `chrome-extension/dist` folder.
+4. **Options:** Right‑click the extension icon → **Extension options** to set the backend URL (default `http://127.0.0.1:8000`) and timeout.
+
+### Requirements
+
+- Same local backend as the web app (health + refine API).
+- Settings (backend URL, timeout, default tone, domain blacklist, etc.) are stored in Chrome local storage. Full details, manual testing checklist, and troubleshooting are in **[chrome-extension/README.md](chrome-extension/README.md)**.
+
+---
+
 ## Quick reference
 
 | What              | Command / URL |
@@ -153,6 +185,7 @@ Open **http://localhost:5173** in your browser, paste text, choose a mode (and o
 | Backend API       | `http://localhost:8000` |
 | Frontend app      | `http://localhost:5173` |
 | API docs (Swagger)| http://localhost:8000/docs |
+| Chrome extension  | Build: `cd chrome-extension && npm run build`; load `dist/` unpacked |
 | Check Ollama      | `ollama list` |
 | Default model     | `qwen2.5:7b-instruct` |
 
@@ -211,6 +244,11 @@ When `mode` is `"custom"`, include `custom_instruction` in the request body.
 │   │   ├── utils/       # Entity extraction, validation
 │   │   └── refinement_modes.py
 │   └── requirements.txt
+├── chrome-extension/  # Chrome extension (refine text in any page)
+│   ├── src/            # Content script, options, shared types
+│   ├── dev/            # Demo page for manual testing
+│   ├── manifest.json
+│   └── README.md       # Full setup, options, and QA checklist
 ├── docker/             # Optional Dockerfile for backend
 └── README.md
 ```
@@ -230,6 +268,9 @@ When `mode` is `"custom"`, include `custom_instruction` in the request body.
 
 - **Python not found (Windows)**  
   Install Python from [python.org](https://www.python.org/downloads/) and ensure “Add Python to PATH” is checked. Use `python` and `pip` in the commands above.
+
+- **Chrome extension: trigger not showing / backend unreachable**  
+  See [chrome-extension/README.md](chrome-extension/README.md): ensure the backend is running, the URL in extension options is correct (e.g. `http://127.0.0.1:8000`), and the page is not blacklisted. Reload the tab after changing options.
 
 ---
 
