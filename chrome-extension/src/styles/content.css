@@ -1,6 +1,20 @@
-/* Placeholder styles for injected UI in content scripts. */
+/* ==========================================================================
+   Local AI Text Refiner – content script styles
+   ========================================================================== */
 
-body.ai-text-refiner-active {
-  /* This class can be toggled by the content script when UI is attached. */
+/* Future: refine popup / toolbar container. */
+/* Future: tone selector, primary action button. */
+/* Future: loading and error states. */
+
+/*
+ * Extension UI root: isolate our injected UI from host page styles.
+ * Only applied to elements we create with data-ai-refiner-root="true".
+ */
+[data-ai-refiner-root="true"] {
+  all: initial;
 }
 
+/* Placeholder: body class when extension UI is attached (for optional scoping). */
+body.ai-text-refiner-active {
+  /* Reserved for future use. */
+}
