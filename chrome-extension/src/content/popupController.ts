@@ -216,8 +216,9 @@ export class RefineTriggerController {
   private handleRootMouseDown(e: MouseEvent): void {
     const target = e.target;
     if (!(target instanceof HTMLElement)) return;
-    const triggerEl = target.closest(`#${FLOATING_TRIGGER_ID}`);
-    if (triggerEl) {
+    const root =
+      this.extensionRoot ?? document.querySelector(AI_REFINER_ROOT_SELECTOR);
+    if (root && root.contains(target)) {
       e.preventDefault();
       e.stopPropagation();
     }

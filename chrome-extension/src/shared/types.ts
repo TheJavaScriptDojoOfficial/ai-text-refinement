@@ -62,7 +62,7 @@ export type RefineLengthOption = "shorter" | "same" | "longer";
 
 export interface RefineRequestPayload {
   text: string;
-  tone: string;
+  tone: string[];
   mode: "refine";
   preserve_entities: boolean;
   preserve_urls: boolean;

@@ -139,7 +139,7 @@ export function buildRefinePayload(
 ): RefineRequestPayload {
   return {
     text,
-    tone: toneId,
+    tone: [toneId],
     mode: "refine",
     preserve_entities: DEFAULT_PRESERVE_ENTITIES,
     preserve_urls: DEFAULT_PRESERVE_URLS,
