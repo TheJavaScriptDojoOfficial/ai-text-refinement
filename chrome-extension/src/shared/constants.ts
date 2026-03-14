@@ -4,6 +4,15 @@ export const STORAGE_KEYS = {
   requestTimeoutMs: "requestTimeoutMs"
 } as const;
 
+/** Single key for all extension settings in chrome.storage.local. */
+export const SETTINGS_STORAGE_KEY = "aiRefinerSettings";
+
+/** Canonical defaults for extension settings. */
+export const DEFAULT_DEFAULT_TONE = "professional";
+export const DEFAULT_AUTO_SHOW_TRIGGER = true;
+export const DEFAULT_EXTENSION_ENABLED = true;
+export const DEFAULT_DOMAIN_BLACKLIST: string[] = [];
+
 /** Backend API paths (centralized for easy adjustment). */
 export const HEALTH_ENDPOINT_PATH = "/api/health";
 export const REFINE_ENDPOINT_PATH = "/api/refine";
@@ -66,6 +75,9 @@ export const TONE_POPUP_VIEWPORT_PADDING = 8;
 
 export const TONE_POPUP_CLASS = "ai-refiner-popup";
 export const TONE_POPUP_HIDDEN_CLASS = "ai-refiner-popup--hidden";
+
+/** Max timeout (ms) for backend requests (validators). */
+export const MAX_REQUEST_TIMEOUT_MS = 300000;
 
 export const DEFAULT_TONE_OPTIONS = [
   { id: "professional", label: "Professional", description: "Clear and work-appropriate" },

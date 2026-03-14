@@ -9,7 +9,8 @@ import type {
   RefineRequestPayload,
   RefineSuccessResponse,
   RefineErrorResponse,
-  RefineMode
+  RefineMode,
+  RefineLengthOption
 } from "../shared/types";
 import {
   HEALTH_ENDPOINT_PATH,
@@ -154,19 +155,27 @@ const EXTENSION_TONE_TO_BACKEND_MODE: Record<string, RefineMode> = {
 
 const DEFAULT_BACKEND_MODE: RefineMode = "clarity";
 
-/** Build default refine payload from text and tone. */
+export interface BuildRefinePayloadOverrides {
+  preserve_entities?: boolean;
+  preserve_urls?: boolean;
+  preserve_ids?: boolean;
+  length?: RefineLengthOption;
+}
+
+/** Build refine payload from text and tone; optional overrides from settings. */
 export function buildRefinePayload(
   text: string,
-  toneId: string
+  toneId: string,
+  overrides?: BuildRefinePayloadOverrides
 ): RefineRequestPayload {
   const mode = EXTENSION_TONE_TO_BACKEND_MODE[toneId] ?? DEFAULT_BACKEND_MODE;
   return {
     text,
     tone: [toneId],
     mode,
-    preserve_entities: DEFAULT_PRESERVE_ENTITIES,
-    preserve_urls: DEFAULT_PRESERVE_URLS,
-    preserve_ids: DEFAULT_PRESERVE_IDS,
-    length: DEFAULT_LENGTH_OPTION
+    preserve_entities: overrides?.preserve_entities ?? DEFAULT_PRESERVE_ENTITIES,
+    preserve_urls: overrides?.preserve_urls ?? DEFAULT_PRESERVE_URLS,
+    preserve_ids: overrides?.preserve_ids ?? DEFAULT_PRESERVE_IDS,
+    length: overrides?.length ?? DEFAULT_LENGTH_OPTION
   };
 }

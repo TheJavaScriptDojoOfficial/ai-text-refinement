@@ -1,3 +1,5 @@
+import { getSettings } from "../shared/storage";
+import { isDomainBlacklisted } from "./siteGuards";
 import { EditableFieldDetector } from "./fieldDetector";
 import { FloatingTriggerRenderer } from "./domRenderer";
 import { RefineTriggerController } from "./popupController";
@@ -22,11 +24,25 @@ function logActiveFieldCleared(): void {
   console.log(`${LOG_PREFIX} Active field cleared`);
 }
 
-function runContentScript(): void {
+async function runContentScript(): Promise<void> {
+  const settings = await getSettings();
+  const hostname = window.location.hostname;
+
+  if (!settings.enabled) {
+    console.log(`${LOG_PREFIX} Extension disabled by settings`);
+    return;
+  }
+  if (isDomainBlacklisted(hostname, settings.domainBlacklist)) {
+    console.log(`${LOG_PREFIX} Extension inactive on blacklisted domain: ${hostname}`);
+    return;
+  }
+
   const apiClient = new LocalRefinerApiClient();
   const renderer = new FloatingTriggerRenderer();
   const controller = new RefineTriggerController(renderer, {
     apiClient,
+    autoShowTrigger: settings.autoShowTrigger,
+    defaultTone: settings.defaultTone,
     onRefineSuccess(result) {
       const adapter = createFieldAdapter(result.field.element);
       adapter.setValue(result.refinedText);
@@ -73,4 +89,4 @@ function runContentScript(): void {
     detector;
 }
 
-runContentScript();
+void runContentScript();

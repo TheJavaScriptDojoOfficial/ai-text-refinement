@@ -17,6 +17,7 @@ import {
   getPopupPositionFromTrigger,
   clampPopupToViewport
 } from "./fieldPosition";
+import { getSettings } from "../shared/storage";
 import type { LocalRefinerApiClient } from "./backendClient";
 import { buildRefinePayload } from "./backendClient";
 
@@ -39,6 +40,10 @@ export interface RefineSuccessResult {
 
 export interface RefineTriggerControllerConfig {
   apiClient: LocalRefinerApiClient;
+  /** If false, trigger is never shown (default true). */
+  autoShowTrigger?: boolean;
+  /** Pre-selected tone when popup opens (e.g. from options). */
+  defaultTone?: string | null;
   onRefineSuccess?: (result: RefineSuccessResult) => void;
 }
 
@@ -46,6 +51,8 @@ export class RefineTriggerController {
   private readonly renderer: FloatingTriggerRenderer;
   private readonly apiClient: LocalRefinerApiClient;
   private readonly onRefineSuccess?: (result: RefineSuccessResult) => void;
+  private readonly autoShowTrigger: boolean;
+  private readonly defaultTone: string | null;
   private detector: EditableFieldDetector | null = null;
   private rafId: number | null = null;
   private scrollResizeScheduled = false;
@@ -72,6 +79,8 @@ export class RefineTriggerController {
     this.renderer = renderer;
     this.apiClient = config.apiClient;
     this.onRefineSuccess = config.onRefineSuccess;
+    this.autoShowTrigger = config.autoShowTrigger !== false;
+    this.defaultTone = config.defaultTone ?? null;
     this.boundOnScroll = this.schedulePositionUpdate.bind(this);
     this.boundOnResize = this.schedulePositionUpdate.bind(this);
     this.boundOnTriggerClick = this.handleTriggerClick.bind(this);
@@ -165,6 +174,12 @@ export class RefineTriggerController {
     const detector = this.detector;
     if (!detector) return;
 
+    if (!this.autoShowTrigger) {
+      this.closePopupIfOpen();
+      this.renderer.hideTrigger();
+      return;
+    }
+
     const field = detector.getActiveField();
     const show = this.shouldShowTrigger(field);
 
@@ -198,7 +213,11 @@ export class RefineTriggerController {
       TONE_POPUP_MAX_WIDTH,
       POPUP_ESTIMATED_HEIGHT
     );
-    this.renderer.showPopup(clamped, TONE_OPTIONS, this.selectedToneId);
+    this.renderer.showPopup(
+      clamped,
+      TONE_OPTIONS,
+      this.selectedToneId ?? this.defaultTone
+    );
     this.renderer.setPopupError(null);
     this.popupOpen = true;
   }
@@ -293,7 +312,13 @@ export class RefineTriggerController {
     console.log(`${LOG_PREFIX} Starting refinement: ${toneId}`);
 
     try {
-      const payload = buildRefinePayload(text, toneId);
+      const settings = await getSettings();
+      const payload = buildRefinePayload(text, toneId, {
+        preserve_entities: settings.preserveEntities,
+        preserve_urls: settings.preserveUrls,
+        preserve_ids: settings.preserveIds,
+        length: settings.defaultLengthOption
+      });
       const response = await this.apiClient.refineText(payload);
       const refinedText = response.refined_text;
 

@@ -8,14 +8,16 @@ async function copyExtensionAssets(): Promise<void> {
   const manifestSrc = resolve(root, "manifest.json");
   const manifestDest = resolve(distDir, "manifest.json");
   const optionsHtmlSrc = resolve(root, "src/options/options.html");
-  const optionsHtmlDestDir = resolve(distDir, "options");
-  const optionsHtmlDest = resolve(optionsHtmlDestDir, "options.html");
+  const optionsCssSrc = resolve(root, "src/options/options.css");
+  const optionsDestDir = resolve(distDir, "options");
+  const optionsHtmlDest = resolve(optionsDestDir, "options.html");
+  const optionsCssDest = resolve(optionsDestDir, "options.css");
   const contentCssSrc = resolve(root, "src/styles/content.css");
   const contentCssDestDir = resolve(distDir, "content");
   const contentCssDest = resolve(contentCssDestDir, "content.css");
 
   await fs.mkdir(distDir, { recursive: true });
-  await fs.mkdir(optionsHtmlDestDir, { recursive: true });
+  await fs.mkdir(optionsDestDir, { recursive: true });
   await fs.mkdir(contentCssDestDir, { recursive: true });
   try {
     await fs.copyFile(manifestSrc, manifestDest);
@@ -24,6 +26,11 @@ async function copyExtensionAssets(): Promise<void> {
   }
   try {
     await fs.copyFile(optionsHtmlSrc, optionsHtmlDest);
+  } catch {
+    // ignore
+  }
+  try {
+    await fs.copyFile(optionsCssSrc, optionsCssDest);
   } catch {
     // ignore
   }

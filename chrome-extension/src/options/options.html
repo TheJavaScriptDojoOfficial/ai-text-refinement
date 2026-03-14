@@ -6,38 +6,133 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="stylesheet" href="options.css" />
   </head>
-  <body>
-    <main class="container">
-      <h1>Local AI Text Refiner Settings</h1>
-      <section class="field-group">
-        <label for="backend-url">Backend URL</label>
-        <input
-          type="url"
-          id="backend-url"
-          placeholder="http://127.0.0.1:8000"
-        />
-        <p class="hint">
-          Default: <code>http://127.0.0.1:8000</code>
+  <body class="settings-page">
+    <main class="settings-page__main">
+      <header class="settings-page__header">
+        <h1 class="settings-page__title">Local AI Text Refiner Settings</h1>
+        <p class="settings-page__subtitle">
+          Configure how the extension connects to your local backend and refines text.
         </p>
+      </header>
+
+      <section class="settings-card" aria-labelledby="backend-heading">
+        <h2 id="backend-heading" class="settings-section__title">Backend Settings</h2>
+        <div class="form-row">
+          <label class="form-label" for="backend-url">Backend URL</label>
+          <input
+            type="url"
+            id="backend-url"
+            class="form-input"
+            placeholder="http://127.0.0.1:8000"
+            autocomplete="url"
+          />
+          <p class="form-helper">Base URL of your local refinement API.</p>
+        </div>
+        <div class="form-row">
+          <label class="form-label" for="request-timeout">Request Timeout (ms)</label>
+          <input
+            type="number"
+            id="request-timeout"
+            class="form-input"
+            min="5000"
+            max="300000"
+            step="1000"
+            placeholder="30000"
+          />
+          <p class="form-helper">Default 30000. Min 5000, max 300000.</p>
+        </div>
       </section>
-      <section class="field-group">
-        <label for="request-timeout">Request Timeout (ms)</label>
-        <input
-          type="number"
-          id="request-timeout"
-          min="5000"
-          max="120000"
-          step="1000"
-          placeholder="30000"
-        />
-        <p class="hint">
-          Default: 30000. Min 5000, max 120000.
-        </p>
+
+      <section class="settings-card" aria-labelledby="refinement-heading">
+        <h2 id="refinement-heading" class="settings-section__title">Refinement Defaults</h2>
+        <div class="form-row">
+          <label class="form-label" for="default-tone">Default Tone</label>
+          <select id="default-tone" class="form-input form-input--select">
+            <option value="professional">Professional</option>
+            <option value="friendly">Friendly</option>
+            <option value="polite">Polite</option>
+            <option value="concise">Concise</option>
+            <option value="stronger">Stronger</option>
+            <option value="grammar">Grammar Fix</option>
+          </select>
+          <p class="form-helper">Pre-selected tone when the popup opens.</p>
+        </div>
+        <div class="form-row">
+          <label class="form-label" for="default-length">Default Length</label>
+          <select id="default-length" class="form-input form-input--select">
+            <option value="shorter">Shorter</option>
+            <option value="same">Same</option>
+            <option value="longer">Longer</option>
+          </select>
+        </div>
+        <div class="form-row form-row--checkbox">
+          <label class="form-checkbox">
+            <input type="checkbox" id="preserve-entities" />
+            <span>Preserve entities</span>
+          </label>
+        </div>
+        <div class="form-row form-row--checkbox">
+          <label class="form-checkbox">
+            <input type="checkbox" id="preserve-urls" />
+            <span>Preserve URLs</span>
+          </label>
+        </div>
+        <div class="form-row form-row--checkbox">
+          <label class="form-checkbox">
+            <input type="checkbox" id="preserve-ids" />
+            <span>Preserve IDs</span>
+          </label>
+        </div>
       </section>
-      <button id="save-button" type="button">Save</button>
-      <p id="status" class="status" aria-live="polite"></p>
+
+      <section class="settings-card" aria-labelledby="behavior-heading">
+        <h2 id="behavior-heading" class="settings-section__title">Extension Behavior</h2>
+        <div class="form-row form-row--checkbox">
+          <label class="form-checkbox">
+            <input type="checkbox" id="enabled" />
+            <span>Enable extension</span>
+          </label>
+        </div>
+        <div class="form-row form-row--checkbox">
+          <label class="form-checkbox">
+            <input type="checkbox" id="auto-show-trigger" />
+            <span>Auto-show refine trigger when field has text</span>
+          </label>
+        </div>
+      </section>
+
+      <section class="settings-card" aria-labelledby="domain-heading">
+        <h2 id="domain-heading" class="settings-section__title">Domain Control</h2>
+        <div class="form-row">
+          <label class="form-label" for="domain-blacklist">Domain blacklist</label>
+          <textarea
+            id="domain-blacklist"
+            class="form-input form-input--textarea"
+            rows="4"
+            placeholder="gmail.com&#10;teams.microsoft.com"
+          ></textarea>
+          <p class="form-helper">
+            One hostname per line. The extension will stay inactive on these sites.
+          </p>
+        </div>
+      </section>
+
+      <section class="settings-card settings-card--actions">
+        <div class="button-row">
+          <button type="button" id="save-button" class="button button--primary">
+            Save Settings
+          </button>
+          <button type="button" id="reset-button" class="button button--secondary">
+            Reset to Defaults
+          </button>
+          <button type="button" id="test-backend-button" class="button button--secondary">
+            Test Backend Connection
+          </button>
+        </div>
+      </section>
+
+      <div id="status" class="status-message" aria-live="polite" role="status"></div>
     </main>
     <script type="module" src="options.js"></script>
   </body>
 </html>
-

@@ -217,3 +217,39 @@ The extension expects these endpoints (configurable via Options). All paths and 
 
 - **Refined text is inserted** into the active field via `createFieldAdapter` (value set + `input`/`change` events). If the active field changed before the request returns, the result is discarded and a warning is logged.
 
+---
+
+### Step 7: Options page and local settings
+
+The extension has a full **Options** page and stores all settings in **chrome.storage.local** (no sync). You can configure the backend, refinement defaults, extension behavior, and a domain blacklist.
+
+#### Available settings
+
+| Setting | What it does |
+|--------|----------------|
+| **Backend URL** | Base URL of your local refinement API (e.g. `http://127.0.0.1:8000`). |
+| **Request Timeout (ms)** | Timeout for health and refine requests (default 30000; min 5000, max 300000). |
+| **Default Tone** | Pre-selected tone when the tone popup opens (e.g. Professional, Concise). |
+| **Default Length** | Default length hint for refinement: shorter / same / longer. |
+| **Preserve entities / URLs / IDs** | Checkboxes sent with refine requests to the backend. |
+| **Enable extension** | When off, the content script does not activate on any page. |
+| **Auto-show refine trigger** | When off, the floating trigger is never shown (popup still openable if you add another entry point later). |
+| **Domain blacklist** | Hostnames (one per line). The extension stays **inactive** on these sites. |
+
+#### Domain blacklist
+
+- One hostname per line (or comma-separated). Examples:
+  - `gmail.com`
+  - `teams.microsoft.com`
+  - `localhost`
+- Matching is **exact** (after trim and lowercasing). The extension does not run on blacklisted domains and logs: `[AI Refiner] Extension inactive on blacklisted domain: <hostname>`.
+- If **Enable extension** is off, it logs: `[AI Refiner] Extension disabled by settings`.
+
+#### Test Backend Connection
+
+- On the Options page, **Test Backend Connection** uses the **current form** Backend URL and timeout (not yet saved). It calls `GET /api/health` and shows success or an error (e.g. "Could not connect to backend.", "Connection timed out.").
+
+#### Storage
+
+- All settings are stored in **chrome.storage.local** under a single key. No sync storage or remote config. Values are validated and normalized when read so the runtime always gets safe defaults for missing or invalid data.
+

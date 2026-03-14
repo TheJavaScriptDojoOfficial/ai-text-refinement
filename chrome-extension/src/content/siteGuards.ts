@@ -1,4 +1,4 @@
-import type { SupportedEditableElement } from "../shared/types";
+import type { ExtensionSettings, SupportedEditableElement } from "../shared/types";
 import { EXTENSION_UI_ROOT_ATTR } from "../shared/constants";
 import {
   isHTMLInputElement,
@@ -79,4 +79,28 @@ export function isEligibleEditableElement(
 /** For URL/domain checks if needed later. */
 export function isSiteSupported(url: string): boolean {
   return Boolean(url);
+}
+
+/** Exact hostname match (trimmed, lowercased). Empty entries in blacklist are ignored. */
+export function isDomainBlacklisted(
+  hostname: string,
+  blacklist: string[]
+): boolean {
+  const normalized = hostname.trim().toLowerCase();
+  if (!normalized) return false;
+  for (const entry of blacklist) {
+    const e = entry.trim().toLowerCase();
+    if (e && e === normalized) return true;
+  }
+  return false;
+}
+
+/** Whether the extension should activate on the current site (settings.enabled and not blacklisted). */
+export function shouldActivateOnCurrentSite(
+  settings: ExtensionSettings,
+  hostname: string
+): boolean {
+  if (!settings.enabled) return false;
+  if (isDomainBlacklisted(hostname, settings.domainBlacklist)) return false;
+  return true;
 }

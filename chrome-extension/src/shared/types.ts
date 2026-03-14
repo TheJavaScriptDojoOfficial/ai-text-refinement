@@ -115,3 +115,26 @@ export interface RefineExecutionState {
   activeToneId: string | null;
   errorMessage: string | null;
 }
+
+/** Canonical extension settings stored in chrome.storage.local. */
+export interface ExtensionSettings {
+  backendUrl: string;
+  requestTimeoutMs: number;
+  defaultTone: string;
+  autoShowTrigger: boolean;
+  preserveEntities: boolean;
+  preserveUrls: boolean;
+  preserveIds: boolean;
+  defaultLengthOption: RefineLengthOption;
+  enabled: boolean;
+  domainBlacklist: string[];
+}
+
+export type PartialExtensionSettings = Partial<ExtensionSettings>;
+
+export interface SettingsFormState {
+  values: ExtensionSettings;
+  errors: Partial<Record<keyof ExtensionSettings, string>>;
+  isSaving: boolean;
+  saveMessage: string | null;
+}
