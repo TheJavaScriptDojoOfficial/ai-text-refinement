@@ -2,6 +2,7 @@ import { EditableFieldDetector } from "./fieldDetector";
 import { FloatingTriggerRenderer } from "./domRenderer";
 import { RefineTriggerController } from "./popupController";
 import { LocalRefinerApiClient } from "./backendClient";
+import { createFieldAdapter } from "./fieldValueAdapter";
 
 const LOG_PREFIX = "[AI Refiner]";
 
@@ -27,14 +28,11 @@ function runContentScript(): void {
   const controller = new RefineTriggerController(renderer, {
     apiClient,
     onRefineSuccess(result) {
-      const preview =
-        result.refinedText.length > 60
-          ? result.refinedText.slice(0, 60) + "..."
-          : result.refinedText;
+      const adapter = createFieldAdapter(result.field.element);
+      adapter.setValue(result.refinedText);
       console.log(
-        `${LOG_PREFIX} Refined result received: { type: ${result.field.type}, originalLength: ${result.field.value.length}, refinedLength: ${result.refinedText.length}, toneId: ${result.toneId} }`
+        `${LOG_PREFIX} Refined result applied: { type: ${result.field.type}, toneId: ${result.toneId} }`
       );
-      console.log(`${LOG_PREFIX} Preview: ${preview}`);
     }
   });
 
