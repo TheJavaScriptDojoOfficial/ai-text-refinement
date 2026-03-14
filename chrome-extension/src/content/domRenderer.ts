@@ -21,6 +21,10 @@ const POPUP_OPTION_CLASS = "ai-refiner-popup__option";
 const POPUP_OPTION_LABEL_CLASS = "ai-refiner-popup__option-label";
 const POPUP_OPTION_DESC_CLASS = "ai-refiner-popup__option-description";
 const POPUP_OPTION_SELECTED_CLASS = "ai-refiner-popup__option--selected";
+const POPUP_OPTION_LOADING_CLASS = "ai-refiner-popup__option--loading";
+const POPUP_STATUS_CLASS = "ai-refiner-popup__status";
+const POPUP_STATUS_ERROR_CLASS = "ai-refiner-popup__status--error";
+const POPUP_STATUS_LOADING_CLASS = "ai-refiner-popup__status--loading";
 
 export class FloatingTriggerRenderer {
   private root: HTMLElement | null = null;
@@ -117,8 +121,74 @@ export class FloatingTriggerRenderer {
       list.appendChild(button);
     }
     panel.appendChild(list);
+
+    const status = document.createElement("div");
+    status.className = POPUP_STATUS_CLASS;
+    status.setAttribute("aria-live", "polite");
+    status.setAttribute("role", "status");
+    panel.appendChild(status);
+
     this.root.appendChild(panel);
     this.popup = panel;
+  }
+
+  private getPopupStatusElement(): HTMLElement | null {
+    if (!this.popup) return null;
+    const el = this.popup.querySelector(`.${POPUP_STATUS_CLASS}`);
+    return el instanceof HTMLElement ? el : null;
+  }
+
+  setPopupLoading(isLoading: boolean, activeToneId?: string | null): void {
+    if (!this.popup) return;
+    const options = this.popup.querySelectorAll(`.${POPUP_OPTION_CLASS}`);
+    const statusEl = this.getPopupStatusElement();
+    if (isLoading) {
+      options.forEach((el) => {
+        const btn = el as HTMLButtonElement;
+        btn.disabled = true;
+        const id = btn.getAttribute("data-tone-id");
+        if (id === activeToneId) {
+          btn.classList.add(POPUP_OPTION_LOADING_CLASS);
+        } else {
+          btn.classList.remove(POPUP_OPTION_LOADING_CLASS);
+        }
+      });
+      if (statusEl) {
+        statusEl.textContent = "Refining...";
+        statusEl.className = `${POPUP_STATUS_CLASS} ${POPUP_STATUS_LOADING_CLASS}`;
+        statusEl.classList.remove(POPUP_STATUS_ERROR_CLASS);
+      }
+    } else {
+      options.forEach((el) => {
+        const btn = el as HTMLButtonElement;
+        btn.disabled = false;
+        btn.classList.remove(POPUP_OPTION_LOADING_CLASS);
+      });
+      if (statusEl) {
+        statusEl.textContent = "";
+        statusEl.className = POPUP_STATUS_CLASS;
+        statusEl.classList.remove(POPUP_STATUS_LOADING_CLASS, POPUP_STATUS_ERROR_CLASS);
+      }
+    }
+  }
+
+  setPopupError(message: string | null): void {
+    const statusEl = this.getPopupStatusElement();
+    if (!statusEl) return;
+    if (message) {
+      statusEl.textContent = message;
+      statusEl.className = `${POPUP_STATUS_CLASS} ${POPUP_STATUS_ERROR_CLASS}`;
+      statusEl.classList.remove(POPUP_STATUS_LOADING_CLASS);
+    } else {
+      statusEl.textContent = "";
+      statusEl.className = POPUP_STATUS_CLASS;
+      statusEl.classList.remove(POPUP_STATUS_ERROR_CLASS);
+    }
+  }
+
+  clearPopupFeedback(): void {
+    this.setPopupLoading(false);
+    this.setPopupError(null);
   }
 
   showPopup(

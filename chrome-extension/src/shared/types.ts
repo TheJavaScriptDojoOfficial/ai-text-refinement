@@ -52,4 +52,52 @@ export interface PopupUiState {
 
 export interface BackendConfig {
   backendUrl: string;
+  requestTimeoutMs?: number;
+}
+
+/** Tone id sent to backend (e.g. 'professional', 'friendly'). */
+export type RefinementToneId = string;
+
+export type RefineLengthOption = "shorter" | "same" | "longer";
+
+export interface RefineRequestPayload {
+  text: string;
+  tone: string;
+  mode: "refine";
+  preserve_entities: boolean;
+  preserve_urls: boolean;
+  preserve_ids: boolean;
+  length: RefineLengthOption;
+}
+
+export interface RefineSuccessResponse {
+  success: true;
+  refined_text: string;
+  warnings?: string[];
+  meta?: {
+    tone?: string;
+    model?: string;
+  };
+}
+
+export interface RefineErrorResponse {
+  success: false;
+  error?: string;
+  message?: string;
+}
+
+export type RefineApiResponse = RefineSuccessResponse | RefineErrorResponse;
+
+export interface HealthResponse {
+  ok: boolean;
+  model_ready?: boolean;
+  model?: string;
+}
+
+export type BackendStatus = "unknown" | "healthy" | "unreachable" | "error";
+
+export interface RefineExecutionState {
+  isLoading: boolean;
+  activeToneId: string | null;
+  errorMessage: string | null;
 }

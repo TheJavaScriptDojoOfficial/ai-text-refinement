@@ -169,3 +169,56 @@ Clicking the floating trigger opens a **tone selection popup** anchored to the t
 8. **Open popup, then focus another text field** → popup closes; trigger updates for the new field.
 9. **Scroll or resize with popup open** → popup stays anchored and within viewport.
 
+---
+
+### Step 5: Backend API integration
+
+The extension calls your **local Python refinement backend** when you select a tone. It sends the current field text and selected tone, receives refined text, and shows loading/error state in the popup. **Refined text is not inserted into the field yet**—that will be a later step.
+
+#### Backend contract
+
+The extension expects these endpoints (configurable via Options):
+
+**1. Health check**  
+`GET /api/health`
+
+- Success example: `{ "ok": true, "model_ready": true, "model": "qwen2.5-coder:14b" }`
+- Used only for optional startup logging (e.g. "Backend healthy" / "Backend unreachable"). Refinement does not depend on a prior health check.
+
+**2. Refine text**  
+`POST /api/refine`
+
+- Request body:
+  - `text`: string (current field content)
+  - `tone`: string (e.g. `"professional"`, `"friendly"`)
+  - `mode`: `"refine"`
+  - `preserve_entities`, `preserve_urls`, `preserve_ids`: boolean (defaults: true)
+  - `length`: `"shorter"` | `"same"` | `"longer"` (default: `"same"`)
+- Success: `{ "success": true, "refined_text": "...", "warnings": [], "meta": { ... } }`
+- Error: `{ "success": false, "error": "..." }` or `"message"` field
+
+All paths and defaults are centralized in `src/shared/constants.ts` and the backend client so you can adjust them if your API differs.
+
+#### Options page settings
+
+- **Backend URL** — Base URL of the local backend (default: `http://127.0.0.1:8000`).
+- **Request Timeout (ms)** — Timeout for health and refine requests (default: 30000; min 5000, max 120000).
+
+#### Runtime flow
+
+1. Focus a supported field with text → trigger appears.  
+2. Click trigger → tone popup opens.  
+3. Select a tone → popup shows "Refining...", tone buttons are disabled, request is sent.  
+4. **Success** → Console logs refined result (type, lengths, toneId, preview); popup closes. Refined text is **not** inserted yet.  
+5. **Failure** → Popup stays open with an inline error (e.g. "Local refinement server is not running.", "The local refinement request timed out."). User can clear the error by choosing another tone or closing the popup.
+
+#### Field identity and errors
+
+- If the active field changes or is cleared before the request returns, the result is **discarded** and a short warning is logged.  
+- Errors are normalized to user-facing messages (unreachable, timeout, generic failure, backend error message).  
+- Invalid backend URL or missing `refined_text` in the response is handled without crashing.
+
+#### Current limitation
+
+- **Refined text is not inserted into the field.** Success is only logged and passed to an internal callback. Text replacement will be implemented in a later step.
+

@@ -41,10 +41,21 @@ input[type="url"] {
   font-size: 0.95rem;
 }
 
-input[type="url"]:focus {
+input[type="url"]:focus,
+input[type="number"]:focus {
   outline: none;
   border-color: #38bdf8;
   box-shadow: 0 0 0 1px rgba(56, 189, 248, 0.5);
+}
+
+input[type="number"] {
+  padding: 0.55rem 0.7rem;
+  border-radius: 0.5rem;
+  border: 1px solid rgba(148, 163, 184, 0.5);
+  background-color: rgba(15, 23, 42, 0.9);
+  color: #e5e7eb;
+  font-size: 0.95rem;
+  width: 8rem;
 }
 
 .hint {
@@ -82,5 +93,9 @@ button:active {
   margin-top: 1rem;
   font-size: 0.85rem;
   color: #a5b4fc;
+}
+
+.status--error {
+  color: #f87171;
 }
 

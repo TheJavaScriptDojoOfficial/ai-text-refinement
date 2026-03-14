@@ -1,5 +1,16 @@
-const BACKEND_URL_KEY = "backendUrl";
-const DEFAULT_BACKEND_URL = "http://127.0.0.1:8000";
+import {
+  getBackendUrl,
+  setBackendUrl,
+  getRequestTimeoutMs,
+  setRequestTimeoutMs
+} from "../shared/storage";
+import {
+  DEFAULT_BACKEND_URL,
+  DEFAULT_REQUEST_TIMEOUT_MS
+} from "../shared/constants";
+
+const MIN_TIMEOUT_MS = 5000;
+const MAX_TIMEOUT_MS = 120000;
 
 function getBackendUrlInput(): HTMLInputElement {
   const input = document.getElementById("backend-url");
@@ -9,34 +20,75 @@ function getBackendUrlInput(): HTMLInputElement {
   return input;
 }
 
+function getTimeoutInput(): HTMLInputElement {
+  const input = document.getElementById("request-timeout");
+  if (!(input instanceof HTMLInputElement)) {
+    throw new Error("Request timeout input not found");
+  }
+  return input;
+}
+
 function getStatusElement(): HTMLElement | null {
   const el = document.getElementById("status");
   return el instanceof HTMLElement ? el : null;
 }
 
-async function loadSettings(): Promise<void> {
-  const input = getBackendUrlInput();
+function isValidUrl(value: string): boolean {
+  const trimmed = value.trim();
+  if (!trimmed) return true;
+  try {
+    const u = new URL(trimmed);
+    return u.protocol === "http:" || u.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
 
-  chrome.storage.sync.get([BACKEND_URL_KEY], (result) => {
-    const stored = result[BACKEND_URL_KEY] as string | undefined;
-    input.value = stored || DEFAULT_BACKEND_URL;
-  });
+function parseTimeout(value: string): number {
+  const n = parseInt(value, 10);
+  if (Number.isNaN(n) || n < MIN_TIMEOUT_MS) return DEFAULT_REQUEST_TIMEOUT_MS;
+  if (n > MAX_TIMEOUT_MS) return MAX_TIMEOUT_MS;
+  return n;
+}
+
+async function loadSettings(): Promise<void> {
+  const urlInput = getBackendUrlInput();
+  const timeoutInput = getTimeoutInput();
+
+  const [url, timeout] = await Promise.all([
+    getBackendUrl(),
+    getRequestTimeoutMs()
+  ]);
+  urlInput.value = url;
+  timeoutInput.value = String(timeout);
 }
 
 async function saveSettings(): Promise<void> {
-  const input = getBackendUrlInput();
+  const urlInput = getBackendUrlInput();
+  const timeoutInput = getTimeoutInput();
   const status = getStatusElement();
 
-  const value = input.value.trim() || DEFAULT_BACKEND_URL;
-
-  chrome.storage.sync.set({ [BACKEND_URL_KEY]: value }, () => {
+  const urlValue = urlInput.value.trim() || DEFAULT_BACKEND_URL;
+  if (!isValidUrl(urlValue)) {
     if (status) {
-      status.textContent = "Settings saved.";
-      setTimeout(() => {
-        status.textContent = "";
-      }, 2000);
+      status.textContent = "Please enter a valid http(s) URL.";
+      status.setAttribute("class", "status status--error");
     }
-  });
+    return;
+  }
+
+  const timeoutMs = parseTimeout(timeoutInput.value);
+
+  await setBackendUrl(urlValue);
+  await setRequestTimeoutMs(timeoutMs);
+
+  if (status) {
+    status.textContent = "Settings saved.";
+    status.setAttribute("class", "status");
+    setTimeout(() => {
+      status.textContent = "";
+    }, 2000);
+  }
 }
 
 function init(): void {
@@ -53,4 +105,3 @@ function init(): void {
 }
 
 init();
-

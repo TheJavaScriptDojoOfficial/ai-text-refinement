@@ -5,7 +5,7 @@
   "description": "Chrome extension to refine text on any website using a local LLM backend.",
   "scripts": {
     "dev": "vite build --watch",
-    "build": "vite build",
+    "build": "vite build --config vite.content.config.ts && vite build",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {

@@ -1,6 +1,7 @@
 import { EditableFieldDetector } from "./fieldDetector";
 import { FloatingTriggerRenderer } from "./domRenderer";
 import { RefineTriggerController } from "./popupController";
+import { LocalRefinerApiClient } from "./backendClient";
 
 const LOG_PREFIX = "[AI Refiner]";
 
@@ -21,8 +22,21 @@ function logActiveFieldCleared(): void {
 }
 
 function runContentScript(): void {
+  const apiClient = new LocalRefinerApiClient();
   const renderer = new FloatingTriggerRenderer();
-  const controller = new RefineTriggerController(renderer);
+  const controller = new RefineTriggerController(renderer, {
+    apiClient,
+    onRefineSuccess(result) {
+      const preview =
+        result.refinedText.length > 60
+          ? result.refinedText.slice(0, 60) + "..."
+          : result.refinedText;
+      console.log(
+        `${LOG_PREFIX} Refined result received: { type: ${result.field.type}, originalLength: ${result.field.value.length}, refinedLength: ${result.refinedText.length}, toneId: ${result.toneId} }`
+      );
+      console.log(`${LOG_PREFIX} Preview: ${preview}`);
+    }
+  });
 
   const detector = new EditableFieldDetector({
     onActiveFieldChange(fieldInfo) {
@@ -44,7 +58,18 @@ function runContentScript(): void {
   detector.start();
   controller.start(detector);
 
-  console.log(`${LOG_PREFIX} Content script active; field detector and trigger started.`);
+  console.log(
+    `${LOG_PREFIX} Content script active; field detector and trigger started.`
+  );
+
+  void apiClient.checkHealth().then(
+    () => {
+      console.log(`${LOG_PREFIX} Backend healthy`);
+    },
+    () => {
+      console.log(`${LOG_PREFIX} Backend unreachable`);
+    }
+  );
 
   (window as unknown as { __aiRefinerDetector?: EditableFieldDetector }).__aiRefinerDetector =
     detector;

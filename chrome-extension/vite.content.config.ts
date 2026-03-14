@@ -38,32 +38,19 @@ export default defineConfig({
   build: {
     outDir: "dist",
     sourcemap: true,
-    emptyOutDir: false,
+    emptyOutDir: true,
     rollupOptions: {
-      input: {
-        serviceWorker: resolve(__dirname, "src/background/serviceWorker.ts"),
-        options: resolve(__dirname, "src/options/options.ts")
-      },
+      input: resolve(__dirname, "src/content/contentScript.ts"),
       output: {
-        format: "es",
-        entryFileNames: (chunkInfo) => {
-          if (chunkInfo.name === "serviceWorker") {
-            return "background/serviceWorker.js";
-          }
-          if (chunkInfo.name === "options") {
-            return "options/options.js";
-          }
-          return "assets/[name].js";
-        },
-        chunkFileNames: "assets/[name].js",
-        assetFileNames: "assets/[name][extname]"
+        format: "iife",
+        inlineDynamicImports: true,
+        entryFileNames: "content/contentScript.js"
       }
     }
   },
-  publicDir: "public",
   plugins: [
     {
-      name: "copy-static-extension-assets",
+      name: "copy-content-assets",
       apply: "build",
       writeBundle: copyExtensionAssets
     }

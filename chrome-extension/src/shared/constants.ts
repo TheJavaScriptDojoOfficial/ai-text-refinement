@@ -1,7 +1,25 @@
 export const DEFAULT_BACKEND_URL = "http://127.0.0.1:8000";
 export const STORAGE_KEYS = {
-  backendUrl: "backendUrl"
+  backendUrl: "backendUrl",
+  requestTimeoutMs: "requestTimeoutMs"
 } as const;
+
+/** Backend API paths (centralized for easy adjustment). */
+export const HEALTH_ENDPOINT_PATH = "/api/health";
+export const REFINE_ENDPOINT_PATH = "/api/refine";
+export const DEFAULT_REQUEST_TIMEOUT_MS = 30000;
+export const DEFAULT_PRESERVE_ENTITIES = true;
+export const DEFAULT_PRESERVE_URLS = true;
+export const DEFAULT_PRESERVE_IDS = true;
+export const DEFAULT_LENGTH_OPTION = "same" as const;
+
+/** User-facing error messages. */
+export const BACKEND_UNREACHABLE_MESSAGE =
+  "Local refinement server is not running.";
+export const BACKEND_TIMEOUT_MESSAGE =
+  "The local refinement request timed out.";
+export const BACKEND_GENERIC_ERROR_MESSAGE =
+  "Refinement failed. Please try again.";
 
 /** Input type attribute values we treat as editable text fields. */
 export const SUPPORTED_INPUT_TYPES = [

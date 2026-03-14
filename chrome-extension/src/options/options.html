@@ -20,6 +20,20 @@
           Default: <code>http://127.0.0.1:8000</code>
         </p>
       </section>
+      <section class="field-group">
+        <label for="request-timeout">Request Timeout (ms)</label>
+        <input
+          type="number"
+          id="request-timeout"
+          min="5000"
+          max="120000"
+          step="1000"
+          placeholder="30000"
+        />
+        <p class="hint">
+          Default: 30000. Min 5000, max 120000.
+        </p>
+      </section>
       <button id="save-button" type="button">Save</button>
       <p id="status" class="status" aria-live="polite"></p>
     </main>

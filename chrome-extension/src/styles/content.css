@@ -141,7 +141,51 @@
   margin-top: 2px;
 }
 
-/* Future: loading and error states. */
+/* Popup status (loading / error). */
+.ai-refiner-popup__status {
+  padding: 8px 14px 10px;
+  font-size: 12px;
+  color: #94a3b8;
+  min-height: 1.2em;
+  border-top: 1px solid rgba(148, 163, 184, 0.15);
+}
+
+.ai-refiner-popup__status--loading {
+  color: #38bdf8;
+}
+
+.ai-refiner-popup__status--error {
+  color: #f87171;
+}
+
+.ai-refiner-popup__option:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.ai-refiner-popup__option--loading {
+  position: relative;
+}
+
+.ai-refiner-popup__option--loading::after {
+  content: "";
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(56, 189, 248, 0.4);
+  border-top-color: #38bdf8;
+  border-radius: 50%;
+  animation: ai-refiner-spin 0.7s linear infinite;
+}
+
+@keyframes ai-refiner-spin {
+  to {
+    transform: translateY(-50%) rotate(360deg);
+  }
+}
 
 /* Placeholder: body class when extension UI is attached. */
 body.ai-text-refiner-active {

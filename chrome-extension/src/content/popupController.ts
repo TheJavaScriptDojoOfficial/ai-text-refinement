@@ -17,6 +17,8 @@ import {
   getPopupPositionFromTrigger,
   clampPopupToViewport
 } from "./fieldPosition";
+import type { LocalRefinerApiClient } from "./backendClient";
+import { buildRefinePayload } from "./backendClient";
 
 const LOG_PREFIX = "[AI Refiner]";
 /** Estimated popup height for viewport clamping before measure. */
@@ -29,8 +31,21 @@ const TONE_OPTIONS: { id: string; label: string; description: string }[] =
     description: o.description
   }));
 
+export interface RefineSuccessResult {
+  field: EditableFieldInfo;
+  refinedText: string;
+  toneId: string;
+}
+
+export interface RefineTriggerControllerConfig {
+  apiClient: LocalRefinerApiClient;
+  onRefineSuccess?: (result: RefineSuccessResult) => void;
+}
+
 export class RefineTriggerController {
   private readonly renderer: FloatingTriggerRenderer;
+  private readonly apiClient: LocalRefinerApiClient;
+  private readonly onRefineSuccess?: (result: RefineSuccessResult) => void;
   private detector: EditableFieldDetector | null = null;
   private rafId: number | null = null;
   private scrollResizeScheduled = false;
@@ -38,6 +53,9 @@ export class RefineTriggerController {
   private popupOpen = false;
   private selectedToneId: string | null = null;
   private extensionRoot: HTMLElement | null = null;
+  private isLoading = false;
+  private requestFieldRef: { element: EditableFieldInfo["element"] } | null =
+    null;
 
   private readonly boundOnScroll: () => void;
   private readonly boundOnResize: () => void;
@@ -47,8 +65,13 @@ export class RefineTriggerController {
   private readonly boundOnRootClick: (e: MouseEvent) => void;
   private readonly boundOnRootMouseDown: (e: MouseEvent) => void;
 
-  constructor(renderer: FloatingTriggerRenderer) {
+  constructor(
+    renderer: FloatingTriggerRenderer,
+    config: RefineTriggerControllerConfig
+  ) {
     this.renderer = renderer;
+    this.apiClient = config.apiClient;
+    this.onRefineSuccess = config.onRefineSuccess;
     this.boundOnScroll = this.schedulePositionUpdate.bind(this);
     this.boundOnResize = this.schedulePositionUpdate.bind(this);
     this.boundOnTriggerClick = this.handleTriggerClick.bind(this);
@@ -163,12 +186,8 @@ export class RefineTriggerController {
   }
 
   private openPopup(): void {
-    console.log(`${LOG_PREFIX} openPopup() called`);
     const trigger = this.renderer.getTriggerElement();
-    if (!trigger) {
-      console.log(`${LOG_PREFIX} openPopup: no trigger element, abort`);
-      return;
-    }
+    if (!trigger) return;
 
     const position = getPopupPositionFromTrigger(
       trigger,
@@ -180,15 +199,14 @@ export class RefineTriggerController {
       POPUP_ESTIMATED_HEIGHT
     );
     this.renderer.showPopup(clamped, TONE_OPTIONS, this.selectedToneId);
+    this.renderer.setPopupError(null);
     this.popupOpen = true;
-    console.log(`${LOG_PREFIX} Tone popup opened (position: ${clamped.top}, ${clamped.left})`);
   }
 
   private closePopup(): void {
     if (!this.popupOpen) return;
     this.renderer.hidePopup();
     this.popupOpen = false;
-    console.log(`${LOG_PREFIX} Tone popup closed`);
   }
 
   private closePopupIfOpen(): void {
@@ -208,7 +226,6 @@ export class RefineTriggerController {
   private handleTriggerClick(e: MouseEvent): void {
     e.preventDefault();
     e.stopPropagation();
-    console.log(`${LOG_PREFIX} Trigger clicked, popupOpen=${this.popupOpen}`);
     if (this.popupOpen) {
       this.closePopup();
     } else {
@@ -223,7 +240,6 @@ export class RefineTriggerController {
     const root =
       this.extensionRoot ?? document.querySelector(AI_REFINER_ROOT_SELECTOR);
     if (root && root.contains(target)) return;
-    console.log(`${LOG_PREFIX} Outside click, closing popup`);
     this.closePopup();
   }
 
@@ -238,7 +254,6 @@ export class RefineTriggerController {
 
     const triggerEl = target.closest(`#${FLOATING_TRIGGER_ID}`);
     if (triggerEl) {
-      console.log(`${LOG_PREFIX} Root click: trigger`);
       e.preventDefault();
       e.stopPropagation();
       this.handleTriggerClick(e);
@@ -253,11 +268,65 @@ export class RefineTriggerController {
     if (toneId) this.handleToneOptionSelect(toneId);
   }
 
-  private handleToneOptionSelect(toneId: string): void {
+  private async handleToneOptionSelect(toneId: string): Promise<void> {
+    if (this.isLoading) return;
+    const detector = this.detector;
+    if (!detector) return;
+    const field = detector.getActiveField();
+    if (!field || !this.shouldShowTrigger(field)) {
+      this.renderer.setPopupError("No active field or field is empty.");
+      return;
+    }
+    const text = field.value.trim();
+    if (text.length < MIN_TEXT_LENGTH_TO_BE_ACTIONABLE) {
+      this.renderer.setPopupError("Field has no text to refine.");
+      return;
+    }
+
     this.selectedToneId = toneId;
     this.renderer.setPopupSelectedTone(toneId);
-    console.log(`${LOG_PREFIX} Tone selected: ${toneId}`);
-    this.closePopup();
+    this.renderer.setPopupError(null);
+    this.renderer.setPopupLoading(true, toneId);
+    this.isLoading = true;
+    this.requestFieldRef = { element: field.element };
+    console.log(`${LOG_PREFIX} Starting refinement: ${toneId}`);
+
+    try {
+      const payload = buildRefinePayload(text, toneId);
+      const response = await this.apiClient.refineText(payload);
+      const refinedText = response.refined_text;
+
+      const currentField = this.detector?.getActiveField();
+      if (
+        !this.requestFieldRef ||
+        currentField?.element !== this.requestFieldRef.element
+      ) {
+        console.warn(
+          `${LOG_PREFIX} Active field changed during request; discarding result.`
+        );
+        return;
+      }
+      if (!currentField) {
+        console.warn(`${LOG_PREFIX} No active field on success; discarding result.`);
+        return;
+      }
+      console.log(`${LOG_PREFIX} Refinement succeeded`);
+      this.onRefineSuccess?.({
+        field: currentField,
+        refinedText,
+        toneId
+      });
+      this.closePopup();
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Refinement failed. Please try again.";
+      console.log(`${LOG_PREFIX} Refinement failed: ${message}`);
+      this.renderer.setPopupError(message);
+    } finally {
+      this.requestFieldRef = null;
+      this.isLoading = false;
+      this.renderer.setPopupLoading(false);
+    }
   }
 
   private schedulePositionUpdate(): void {
