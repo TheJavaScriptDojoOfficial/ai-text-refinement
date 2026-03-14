@@ -1,3 +1,9 @@
+/**
+ * Backend API client for the local refinement service.
+ * Contract: GET /api/health, POST /api/refine.
+ * Backend expects tone: string[] and mode as a valid mode key (see refinement_modes.VALID_MODES).
+ * Extension tone IDs are mapped to backend mode in EXTENSION_TONE_TO_BACKEND_MODE below.
+ */
 import type {
   HealthResponse,
   RefineRequestPayload,

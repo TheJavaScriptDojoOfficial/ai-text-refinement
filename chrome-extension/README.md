@@ -1,7 +1,6 @@
 ## Local AI Text Refiner – Chrome Extension
 
-This Chrome extension lets you refine text on any website using your **local LLM backend** from the AI Text Refinement Tool.  
-Right now this project is a scaffold: it is buildable and wired to your backend URL setting, but the actual refinement logic is not implemented yet.
+This Chrome extension lets you refine text on any website using your **local LLM backend** from the AI Text Refinement Tool. It detects editable fields, shows a floating refine trigger and tone popup, calls your local backend to refine the text, and inserts the result into the field.
 
 ### How to install dependencies
 
@@ -41,10 +40,8 @@ The compiled extension assets (background, content script, options page, manifes
 
 After loading:
 
-- The **content script** runs on all pages and currently just logs:
-  - `"AI Text Refiner content script active"` in the page console.
-- The **background service worker** logs:
-  - `"AI Text Refiner extension loaded"` in the extension’s background console.
+- The **content script** runs on all pages: it detects editable fields, shows the refine trigger and tone popup, and calls the backend when you select a tone. Check the page console for `[AI Refiner]` logs.
+- The **background service worker** logs `"AI Text Refiner extension loaded"` in the extension’s background console.
 
 ### How it connects to the local backend
 
@@ -61,7 +58,7 @@ The extension is designed to talk to the existing **Python backend** that powers
    - Click **Save**.
 3. The URL is persisted in `chrome.storage.sync`, and internal code (e.g. `backendClient.ts`) will read this value when making calls to the backend.
 
-At this stage, the extension **does not yet send refinement requests**; the relevant modules (`backendClient.ts`, `content` utilities, etc.) are stubbed and ready for future implementation of the full refinement flow.
+The extension sends refinement requests when you select a tone; see **Step 5** below for the full flow.
 
 ---
 
@@ -173,31 +170,29 @@ Clicking the floating trigger opens a **tone selection popup** anchored to the t
 
 ### Step 5: Backend API integration
 
-The extension calls your **local Python refinement backend** when you select a tone. It sends the current field text and selected tone, receives refined text, and shows loading/error state in the popup. **Refined text is not inserted into the field yet**—that will be a later step.
+The extension calls your **local Python refinement backend** when you select a tone. It sends the current field text and selected tone, receives refined text, shows loading/error state in the popup, and **inserts the refined text into the active field** on success.
 
 #### Backend contract
 
-The extension expects these endpoints (configurable via Options):
+The extension expects these endpoints (configurable via Options). All paths and defaults are in `src/shared/constants.ts` and `src/content/backendClient.ts`; the client maps extension tone IDs to backend `mode` so validation passes. Adjust the mapping in `backendClient.ts` if your API differs.
 
 **1. Health check**  
 `GET /api/health`
 
 - Success example: `{ "ok": true, "model_ready": true, "model": "qwen2.5-coder:14b" }`
-- Used only for optional startup logging (e.g. "Backend healthy" / "Backend unreachable"). Refinement does not depend on a prior health check.
+- Used only for optional startup logging ("Backend healthy" / "Backend unreachable"). Refinement does not depend on a prior health check.
 
 **2. Refine text**  
 `POST /api/refine`
 
-- Request body:
+- Request body (actual payload sent by the extension):
   - `text`: string (current field content)
-  - `tone`: string (e.g. `"professional"`, `"friendly"`)
-  - `mode`: `"refine"`
+  - `tone`: **string[]** (e.g. `["professional"]`) — backend expects a list
+  - `mode`: string — must be one of the backend’s valid modes (e.g. `"professional"`, `"grammar_only"`, `"clarity"`). The extension maps each tone option to a valid mode in `EXTENSION_TONE_TO_BACKEND_MODE` in `backendClient.ts`.
   - `preserve_entities`, `preserve_urls`, `preserve_ids`: boolean (defaults: true)
   - `length`: `"shorter"` | `"same"` | `"longer"` (default: `"same"`)
 - Success: `{ "success": true, "refined_text": "...", "warnings": [], "meta": { ... } }`
 - Error: `{ "success": false, "error": "..." }` or `"message"` field
-
-All paths and defaults are centralized in `src/shared/constants.ts` and the backend client so you can adjust them if your API differs.
 
 #### Options page settings
 
@@ -209,8 +204,8 @@ All paths and defaults are centralized in `src/shared/constants.ts` and the back
 1. Focus a supported field with text → trigger appears.  
 2. Click trigger → tone popup opens.  
 3. Select a tone → popup shows "Refining...", tone buttons are disabled, request is sent.  
-4. **Success** → Console logs refined result (type, lengths, toneId, preview); popup closes. Refined text is **not** inserted yet.  
-5. **Failure** → Popup stays open with an inline error (e.g. "Local refinement server is not running.", "The local refinement request timed out."). User can clear the error by choosing another tone or closing the popup.
+4. **Success** → Refined text is **inserted into the active field**; popup closes; console logs applied result.  
+5. **Failure** → Popup stays open with an inline error (e.g. "Local refinement server is not running.", "The local refinement request timed out."). User can retry by choosing another tone or closing the popup.
 
 #### Field identity and errors
 
@@ -218,7 +213,7 @@ All paths and defaults are centralized in `src/shared/constants.ts` and the back
 - Errors are normalized to user-facing messages (unreachable, timeout, generic failure, backend error message).  
 - Invalid backend URL or missing `refined_text` in the response is handled without crashing.
 
-#### Current limitation
+#### Implementation notes
 
-- **Refined text is not inserted into the field.** Success is only logged and passed to an internal callback. Text replacement will be implemented in a later step.
+- **Refined text is inserted** into the active field via `createFieldAdapter` (value set + `input`/`change` events). If the active field changed before the request returns, the result is discarded and a warning is logged.
 
