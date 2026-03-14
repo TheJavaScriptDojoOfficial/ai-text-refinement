@@ -22,13 +22,27 @@ export const DEFAULT_PRESERVE_URLS = true;
 export const DEFAULT_PRESERVE_IDS = true;
 export const DEFAULT_LENGTH_OPTION = "same" as const;
 
-/** User-facing error messages. */
+/** Health check and retry behavior. */
+export const HEALTH_CHECK_CACHE_TTL_MS = 30000;
+export const STARTUP_HEALTH_CHECK_ENABLED = true;
+export const PRE_REFINE_HEALTH_CHECK_ENABLED = false;
+export const POPUP_ERROR_AUTO_CLEAR_MS = 0;
+export const MIN_TIMEOUT_MS = 1000;
+
+/** User-facing error messages (centralized). */
 export const BACKEND_UNREACHABLE_MESSAGE =
   "Local refinement server is not running.";
 export const BACKEND_TIMEOUT_MESSAGE =
   "The local refinement request timed out.";
-export const BACKEND_GENERIC_ERROR_MESSAGE =
+export const BACKEND_NOT_READY_MESSAGE = "The local model is not ready yet.";
+export const INVALID_BACKEND_RESPONSE_MESSAGE =
+  "The backend returned an invalid response.";
+export const INVALID_SETTINGS_MESSAGE = "Extension settings are invalid.";
+export const REPLACEMENT_FAILED_MESSAGE =
+  "Refined text was received, but applying it failed.";
+export const GENERIC_REFINEMENT_ERROR_MESSAGE =
   "Refinement failed. Please try again.";
+export const BACKEND_GENERIC_ERROR_MESSAGE = GENERIC_REFINEMENT_ERROR_MESSAGE;
 
 /** Input type attribute values we treat as editable text fields. */
 export const SUPPORTED_INPUT_TYPES = [
@@ -78,6 +92,7 @@ export const TONE_POPUP_HIDDEN_CLASS = "ai-refiner-popup--hidden";
 
 /** Max timeout (ms) for backend requests (validators). */
 export const MAX_REQUEST_TIMEOUT_MS = 300000;
+export const MAX_TIMEOUT_MS = MAX_REQUEST_TIMEOUT_MS;
 
 export const DEFAULT_TONE_OPTIONS = [
   { id: "professional", label: "Professional", description: "Clear and work-appropriate" },

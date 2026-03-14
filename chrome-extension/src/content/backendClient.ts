@@ -1,11 +1,12 @@
 /**
  * Backend API client for the local refinement service.
  * Contract: GET /api/health, POST /api/refine.
- * Backend expects tone: string[] and mode as a valid mode key (see refinement_modes.VALID_MODES).
- * Extension tone IDs are mapped to backend mode in EXTENSION_TONE_TO_BACKEND_MODE below.
+ * Health results are cached for HEALTH_CHECK_CACHE_TTL_MS.
  */
 import type {
   HealthResponse,
+  HealthCheckResult,
+  HealthCheckTriggerSource,
   RefineRequestPayload,
   RefineSuccessResponse,
   RefineErrorResponse,
@@ -15,8 +16,11 @@ import type {
 import {
   HEALTH_ENDPOINT_PATH,
   REFINE_ENDPOINT_PATH,
+  HEALTH_CHECK_CACHE_TTL_MS,
   BACKEND_UNREACHABLE_MESSAGE,
   BACKEND_TIMEOUT_MESSAGE,
+  BACKEND_NOT_READY_MESSAGE,
+  INVALID_BACKEND_RESPONSE_MESSAGE,
   BACKEND_GENERIC_ERROR_MESSAGE,
   DEFAULT_PRESERVE_ENTITIES,
   DEFAULT_PRESERVE_URLS,
@@ -33,6 +37,87 @@ function buildUrl(baseUrl: string, path: string): string {
   const base = trimTrailingSlash(baseUrl);
   const p = path.startsWith("/") ? path : `/${path}`;
   return `${base}${p}`;
+}
+
+const now = (): number => Date.now();
+
+function normalizeHealthCheckResult(
+  status: HealthCheckResult["status"],
+  ok: boolean,
+  opts: {
+    modelReady?: boolean;
+    model?: string;
+    message?: string;
+  } = {}
+): HealthCheckResult {
+  return {
+    status,
+    ok,
+    modelReady: opts.modelReady,
+    model: opts.model,
+    message: opts.message,
+    checkedAt: now()
+  };
+}
+
+async function fetchHealthRaw(
+  url: string,
+  timeoutMs: number
+): Promise<HealthCheckResult> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fetch(url, {
+      method: "GET",
+      signal: controller.signal,
+      headers: { Accept: "application/json" }
+    });
+    clearTimeout(timeoutId);
+    const text = await res.text();
+    let data: unknown;
+    try {
+      data = text ? JSON.parse(text) : null;
+    } catch {
+      return normalizeHealthCheckResult("error", false, {
+        message: INVALID_BACKEND_RESPONSE_MESSAGE
+      });
+    }
+    const body = data as HealthResponse | null;
+    if (!body || typeof body !== "object") {
+      return normalizeHealthCheckResult("error", false, {
+        message: INVALID_BACKEND_RESPONSE_MESSAGE
+      });
+    }
+    const ok = Boolean(body.ok);
+    const modelReady = body.model_ready;
+    const model = typeof body.model === "string" ? body.model : undefined;
+    if (ok && modelReady === false) {
+      return normalizeHealthCheckResult("not-ready", false, {
+        modelReady: false,
+        model,
+        message: BACKEND_NOT_READY_MESSAGE
+      });
+    }
+    if (ok) {
+      return normalizeHealthCheckResult("healthy", true, {
+        modelReady: modelReady === true,
+        model
+      });
+    }
+    return normalizeHealthCheckResult("error", false, {
+      message: (body as { message?: string }).message ?? BACKEND_NOT_READY_MESSAGE
+    });
+  } catch (err) {
+    clearTimeout(timeoutId);
+    if (err instanceof Error && err.name === "AbortError") {
+      return normalizeHealthCheckResult("timeout", false, {
+        message: BACKEND_TIMEOUT_MESSAGE
+      });
+    }
+    return normalizeHealthCheckResult("unreachable", false, {
+      message: BACKEND_UNREACHABLE_MESSAGE
+    });
+  }
 }
 
 async function fetchJsonWithTimeout<T>(
@@ -57,7 +142,7 @@ async function fetchJsonWithTimeout<T>(
       if (!res.ok) {
         throw new Error(BACKEND_GENERIC_ERROR_MESSAGE);
       }
-      throw new Error("Invalid JSON response");
+      throw new Error(INVALID_BACKEND_RESPONSE_MESSAGE);
     }
     if (!res.ok) {
       const errBody = data as RefineErrorResponse | { error?: string; message?: string };
@@ -75,7 +160,8 @@ async function fetchJsonWithTimeout<T>(
       }
       if (
         err.message === BACKEND_TIMEOUT_MESSAGE ||
-        err.message === BACKEND_GENERIC_ERROR_MESSAGE
+        err.message === BACKEND_GENERIC_ERROR_MESSAGE ||
+        err.message === INVALID_BACKEND_RESPONSE_MESSAGE
       ) {
         throw err;
       }
@@ -86,22 +172,26 @@ async function fetchJsonWithTimeout<T>(
 }
 
 export class LocalRefinerApiClient {
-  async checkHealth(): Promise<HealthResponse> {
+  private healthCache: { result: HealthCheckResult; cachedAt: number } | null =
+    null;
+
+  async checkHealth(
+    force = false,
+    _source?: HealthCheckTriggerSource
+  ): Promise<HealthCheckResult> {
+    const cached = this.healthCache;
+    if (
+      !force &&
+      cached &&
+      now() - cached.cachedAt < HEALTH_CHECK_CACHE_TTL_MS
+    ) {
+      return cached.result;
+    }
     const { backendUrl, requestTimeoutMs } = await getBackendConfig();
     const url = buildUrl(backendUrl, HEALTH_ENDPOINT_PATH);
-    try {
-      const data = await fetchJsonWithTimeout<HealthResponse>(url, {
-        method: "GET",
-        timeoutMs: requestTimeoutMs,
-        headers: { Accept: "application/json" }
-      });
-      return data;
-    } catch (err) {
-      if (err instanceof Error && err.message === BACKEND_TIMEOUT_MESSAGE) {
-        throw new Error(BACKEND_UNREACHABLE_MESSAGE);
-      }
-      throw new Error(BACKEND_UNREACHABLE_MESSAGE);
-    }
+    const result = await fetchHealthRaw(url, requestTimeoutMs);
+    this.healthCache = { result, cachedAt: now() };
+    return result;
   }
 
   async refineText(

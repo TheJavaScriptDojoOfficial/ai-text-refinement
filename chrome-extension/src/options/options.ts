@@ -206,7 +206,7 @@ async function testBackendConnection(): Promise<void> {
   const raw = readFormValues();
   const urlRaw = raw.backendUrl?.trim() || DEFAULT_BACKEND_URL;
   if (!isValidUrl(urlRaw)) {
-    setStatus("Please enter a valid backend URL first.", "error");
+    setStatus("Invalid backend URL.", "error");
     return;
   }
 
@@ -228,15 +228,30 @@ async function testBackendConnection(): Promise<void> {
       headers: { Accept: "application/json" }
     });
     clearTimeout(timeoutId);
+    const text = await res.text();
     if (res.ok) {
-      setStatus("Backend connection successful.", "success");
+      let modelReady: boolean | undefined;
+      try {
+        const data = text ? JSON.parse(text) : null;
+        modelReady =
+          data && typeof data === "object" && "model_ready" in data
+            ? Boolean((data as { model_ready?: unknown }).model_ready)
+            : undefined;
+      } catch {
+        modelReady = undefined;
+      }
+      if (modelReady === false) {
+        setStatus("Backend reachable, but model is not ready.", "error");
+      } else {
+        setStatus("Backend connection successful.", "success");
+      }
     } else {
-      setStatus(`Backend returned ${res.status}.`, "error");
+      setStatus("Could not connect to backend.", "error");
     }
   } catch (err) {
     clearTimeout(timeoutId);
     if (err instanceof Error && err.name === "AbortError") {
-      setStatus("Connection timed out.", "error");
+      setStatus("Request timed out.", "error");
     } else {
       setStatus("Could not connect to backend.", "error");
     }

@@ -247,9 +247,46 @@ The extension has a full **Options** page and stores all settings in **chrome.st
 
 #### Test Backend Connection
 
-- On the Options page, **Test Backend Connection** uses the **current form** Backend URL and timeout (not yet saved). It calls `GET /api/health` and shows success or an error (e.g. "Could not connect to backend.", "Connection timed out.").
+- On the Options page, **Test Backend Connection** uses the **current form** Backend URL and timeout (not yet saved). It calls `GET /api/health` and shows: "Backend connection successful.", "Backend reachable, but model is not ready.", "Could not connect to backend.", "Request timed out.", or "Invalid backend URL." The test button is disabled while the request is in progress.
 
 #### Storage
 
 - All settings are stored in **chrome.storage.local** under a single key. No sync storage or remote config. Values are validated and normalized when read so the runtime always gets safe defaults for missing or invalid data.
+
+---
+
+### Step 8: Loading state, error handling, and health checks
+
+Step 8 hardens the extension when the backend is unavailable, slow, or returns malformed responses. **Existing behavior is unchanged** when the backend is healthy: field detection, trigger, popup, refine, and text replacement all work as before.
+
+#### Health check behavior
+
+- **Startup health check** (optional, non-blocking): After the content script initializes on an allowed site, it may run a single health check in the background. Results are logged only: "Backend healthy", "Backend not ready", or "Backend unreachable". This does **not** block the detector or popup; refinement remains available even if the startup check fails.
+- **Cached health results**: The backend client caches the last health result for a short period (e.g. 30 seconds). Repeated health checks within that window reuse the cache.
+- **Health result normalization**: The client maps backend responses to a consistent shape: `healthy`, `not-ready` (ok but model not ready), `unreachable`, `timeout`, or `error`. Malformed JSON or non-2xx responses are treated as `error` or `unreachable` without crashing.
+
+#### Loading and error handling
+
+- **Popup**: While a refine request is in progress, tone buttons are disabled and a loading state is shown. When the request finishes (success or failure), loading always clears. Errors are shown inline in the popup; the user can retry by choosing another tone or closing and reopening the popup.
+- **Stale request guards**: If the user triggers a new refinement (or the popup closes, or the field changes) before an in-flight request completes, the old result is **ignored**. A request ID ensures only the latest result is applied; duplicate or stale results are discarded and logged briefly.
+- **Replacement failure**: If the backend returns refined text but applying it to the field fails (e.g. DOM no longer valid), the extension logs "Replacement failed: …" and does not throw. The popup is already closed at that point.
+
+#### How backend failures are surfaced
+
+- **Unreachable**: "Local refinement server is not running."
+- **Timeout**: "The local refinement request timed out."
+- **Model not ready**: "The local model is not ready yet." (when health returns ok but model_ready false).
+- **Invalid response**: "The backend returned an invalid response."
+- **Other**: Backend error message or "Refinement failed. Please try again."
+
+All of these appear as inline popup errors so the user can retry or adjust settings.
+
+#### Troubleshooting
+
+| Symptom | What to check |
+|--------|----------------|
+| **Backend unreachable** | Backend URL in options (e.g. `http://127.0.0.1:8000`). Server running and CORS allows the request. |
+| **Model not ready** | Backend may be still loading the model. Wait and retry, or check backend logs. |
+| **Timeout** | Increase "Request Timeout (ms)" in options. Default 30000; min 1000, max 300000. |
+| **Invalid backend URL** | Use `http://` or `https://` and a valid host/port. No trailing path unless your API lives under a subpath. |
 

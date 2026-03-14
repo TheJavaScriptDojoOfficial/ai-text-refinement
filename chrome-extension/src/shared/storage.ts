@@ -13,8 +13,8 @@ import {
   SETTINGS_STORAGE_KEY
 } from "./constants";
 import {
-  normalizeBackendUrl,
-  isValidTimeout,
+  validateBackendUrl,
+  clampTimeoutMs,
   isValidLengthOption,
   normalizeDomainBlacklist
 } from "./validators";
@@ -41,16 +41,17 @@ function sanitizeStored(raw: unknown): ExtensionSettings {
   }
   const o = raw as Record<string, unknown>;
 
-  const backendUrl =
-    typeof o.backendUrl === "string" && o.backendUrl.trim()
-      ? normalizeBackendUrl(o.backendUrl.trim()) || DEFAULT_BACKEND_URL
-      : defaults.backendUrl;
+  let backendUrl = defaults.backendUrl;
+  if (typeof o.backendUrl === "string" && o.backendUrl.trim()) {
+    const result = validateBackendUrl(o.backendUrl.trim());
+    backendUrl = result.valid && result.normalizedValue
+      ? result.normalizedValue
+      : DEFAULT_BACKEND_URL;
+  }
 
-  const requestTimeoutMs = isValidTimeout(
-    typeof o.requestTimeoutMs === "number" ? o.requestTimeoutMs : 0
-  )
-    ? (o.requestTimeoutMs as number)
-    : defaults.requestTimeoutMs;
+  const requestTimeoutMs = clampTimeoutMs(
+    typeof o.requestTimeoutMs === "number" ? o.requestTimeoutMs : defaults.requestTimeoutMs
+  );
 
   const defaultTone =
     typeof o.defaultTone === "string" && o.defaultTone.trim()
@@ -82,11 +83,16 @@ function sanitizeStored(raw: unknown): ExtensionSettings {
   const enabled =
     typeof o.enabled === "boolean" ? o.enabled : defaults.enabled;
 
-  const domainBlacklist = Array.isArray(o.domainBlacklist)
-    ? (o.domainBlacklist as unknown[]).filter(
-        (x): x is string => typeof x === "string" && x.trim() !== ""
-      ).map((s) => s.trim().toLowerCase())
-    : defaults.domainBlacklist;
+  let domainBlacklist: string[] = defaults.domainBlacklist;
+  if (Array.isArray(o.domainBlacklist)) {
+    try {
+      domainBlacklist = (o.domainBlacklist as unknown[])
+        .filter((x): x is string => typeof x === "string" && String(x).trim() !== "")
+        .map((s) => String(s).trim().toLowerCase());
+    } catch {
+      domainBlacklist = [];
+    }
+  }
 
   return {
     backendUrl,

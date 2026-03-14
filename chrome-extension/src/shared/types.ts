@@ -108,7 +108,60 @@ export interface HealthResponse {
   model?: string;
 }
 
-export type BackendStatus = "unknown" | "healthy" | "unreachable" | "error";
+export type BackendStatus =
+  | "unknown"
+  | "healthy"
+  | "unreachable"
+  | "timeout"
+  | "error"
+  | "not-ready";
+
+export type HealthCheckStatus =
+  | "healthy"
+  | "unreachable"
+  | "timeout"
+  | "error"
+  | "not-ready";
+
+export interface HealthCheckResult {
+  status: HealthCheckStatus;
+  ok: boolean;
+  modelReady?: boolean;
+  model?: string;
+  message?: string;
+  checkedAt: number;
+}
+
+export interface RuntimeStatusState {
+  backendStatus: BackendStatus;
+  lastHealthCheck: HealthCheckResult | null;
+  isRefining: boolean;
+  activeRequestId: string | null;
+  lastErrorMessage: string | null;
+}
+
+export type NormalizedExtensionErrorCode =
+  | "INVALID_SETTINGS"
+  | "BACKEND_UNREACHABLE"
+  | "BACKEND_TIMEOUT"
+  | "BACKEND_NOT_READY"
+  | "HTTP_ERROR"
+  | "INVALID_RESPONSE"
+  | "REFINE_FAILED"
+  | "REPLACEMENT_FAILED"
+  | "UNKNOWN";
+
+export interface NormalizedExtensionError {
+  code: NormalizedExtensionErrorCode;
+  message: string;
+  technicalDetails?: string;
+}
+
+export type HealthCheckTriggerSource =
+  | "startup"
+  | "options-page"
+  | "pre-refine"
+  | "manual-retry";
 
 export interface RefineExecutionState {
   isLoading: boolean;

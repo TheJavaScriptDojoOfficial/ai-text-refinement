@@ -61,6 +61,7 @@ export class RefineTriggerController {
   private selectedToneId: string | null = null;
   private extensionRoot: HTMLElement | null = null;
   private isLoading = false;
+  private activeRequestId = 0;
   private requestFieldRef: { element: EditableFieldInfo["element"] } | null =
     null;
 
@@ -309,6 +310,7 @@ export class RefineTriggerController {
     this.renderer.setPopupLoading(true, toneId);
     this.isLoading = true;
     this.requestFieldRef = { element: field.element };
+    const myRequestId = ++this.activeRequestId;
     console.log(`${LOG_PREFIX} Starting refinement: ${toneId}`);
 
     try {
@@ -320,6 +322,11 @@ export class RefineTriggerController {
         length: settings.defaultLengthOption
       });
       const response = await this.apiClient.refineText(payload);
+
+      if (myRequestId !== this.activeRequestId) {
+        console.log(`${LOG_PREFIX} Ignoring stale refine result`);
+        return;
+      }
       const refinedText = response.refined_text;
 
       const currentField = this.detector?.getActiveField();
@@ -344,6 +351,10 @@ export class RefineTriggerController {
       });
       this.closePopup();
     } catch (err) {
+      if (myRequestId !== this.activeRequestId) {
+        console.log(`${LOG_PREFIX} Ignoring stale refine result`);
+        return;
+      }
       const message =
         err instanceof Error ? err.message : "Refinement failed. Please try again.";
       console.log(`${LOG_PREFIX} Refinement failed: ${message}`);
