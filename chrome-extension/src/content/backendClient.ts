@@ -2,7 +2,8 @@ import type {
   HealthResponse,
   RefineRequestPayload,
   RefineSuccessResponse,
-  RefineErrorResponse
+  RefineErrorResponse,
+  RefineMode
 } from "../shared/types";
 import {
   HEALTH_ENDPOINT_PATH,
@@ -132,15 +133,31 @@ export class LocalRefinerApiClient {
   }
 }
 
+/**
+ * Backend expects mode to be one of VALID_MODES (refinement_modes.py).
+ * Map extension tone IDs to a valid backend mode for request validation.
+ */
+const EXTENSION_TONE_TO_BACKEND_MODE: Record<string, RefineMode> = {
+  professional: "professional",
+  polite: "polite",
+  concise: "concise",
+  grammar: "grammar_only",
+  stronger: "assertive",
+  friendly: "clarity"
+};
+
+const DEFAULT_BACKEND_MODE: RefineMode = "clarity";
+
 /** Build default refine payload from text and tone. */
 export function buildRefinePayload(
   text: string,
   toneId: string
 ): RefineRequestPayload {
+  const mode = EXTENSION_TONE_TO_BACKEND_MODE[toneId] ?? DEFAULT_BACKEND_MODE;
   return {
     text,
     tone: [toneId],
-    mode: "refine",
+    mode,
     preserve_entities: DEFAULT_PRESERVE_ENTITIES,
     preserve_urls: DEFAULT_PRESERVE_URLS,
     preserve_ids: DEFAULT_PRESERVE_IDS,

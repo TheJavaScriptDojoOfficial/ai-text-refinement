@@ -60,10 +60,24 @@ export type RefinementToneId = string;
 
 export type RefineLengthOption = "shorter" | "same" | "longer";
 
+/** Must match backend VALID_MODES (refinement_modes.py). */
+export type RefineMode =
+  | "clarity"
+  | "concise"
+  | "professional"
+  | "polite"
+  | "assertive"
+  | "grammar_only"
+  | "bullet_points"
+  | "teams_message"
+  | "email"
+  | "jira_comment"
+  | "custom";
+
 export interface RefineRequestPayload {
   text: string;
   tone: string[];
-  mode: "refine";
+  mode: RefineMode;
   preserve_entities: boolean;
   preserve_urls: boolean;
   preserve_ids: boolean;
