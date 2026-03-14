@@ -2,19 +2,65 @@
    Local AI Text Refiner – content script styles
    ========================================================================== */
 
-/* Future: refine popup / toolbar container. */
-/* Future: tone selector, primary action button. */
-/* Future: loading and error states. */
-
-/*
- * Extension UI root: isolate our injected UI from host page styles.
- * Only applied to elements we create with data-ai-refiner-root="true".
- */
+/* Extension UI root: isolate our injected UI from host page styles. */
 [data-ai-refiner-root="true"] {
   all: initial;
 }
 
-/* Placeholder: body class when extension UI is attached (for optional scoping). */
+[data-ai-refiner-root="true"] {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+  z-index: 2147483647;
+}
+
+[data-ai-refiner-root="true"] .ai-refiner-trigger {
+  pointer-events: auto;
+}
+
+/* Floating refine trigger button (size from FLOATING_TRIGGER_SIZE = 32px). */
+.ai-refiner-trigger {
+  position: fixed;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  background: #1e293b;
+  color: #f8fafc;
+  font-size: 1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.ai-refiner-trigger:hover {
+  opacity: 0.95;
+  transform: scale(1.05);
+}
+
+.ai-refiner-trigger:focus {
+  outline: 2px solid #38bdf8;
+  outline-offset: 2px;
+}
+
+.ai-refiner-trigger--hidden {
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Future: refine popup / toolbar container. */
+/* Future: tone selector, primary action button. */
+/* Future: loading and error states. */
+
+/* Placeholder: body class when extension UI is attached. */
 body.ai-text-refiner-active {
   /* Reserved for future use. */
 }

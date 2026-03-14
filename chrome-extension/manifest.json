@@ -28,6 +28,9 @@
       ],
       "js": [
         "content/contentScript.js"
+      ],
+      "css": [
+        "content/content.css"
       ]
     }
   ],

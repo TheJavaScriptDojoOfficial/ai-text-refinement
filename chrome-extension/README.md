@@ -99,3 +99,39 @@ The extension includes a **field detection engine** that tracks the currently fo
 9. **Blur the field** (click outside or tab away). You should see:  
    `[AI Refiner] Active field cleared`
 
+---
+
+### Step 3: Floating refine trigger
+
+The extension injects a **floating refine button** (✨) near the active editable field when that field has text. The trigger is used only to indicate “refine here”; the popup and backend are **not** implemented yet.
+
+#### Behavior
+
+- **Show trigger:** When a supported field (textarea or text-like input) is focused **and** has at least one character of text (after trim), the trigger appears near the top-right (or bottom-right if there’s no room above) of the field.
+- **Hide trigger:** When the field is cleared, blurred, or no longer eligible (e.g. disabled), or when the field is removed from the DOM, the trigger is hidden.
+- **Positioning:** The button uses `position: fixed` and is repositioned on scroll and resize (with `requestAnimationFrame` throttling). It is clamped so it never goes outside the viewport.
+- **Click:** Clicking the trigger logs `[AI Refiner] Refine trigger clicked` and does not open a popup or call the backend yet. Clicks use `preventDefault`/`stopPropagation` so the host page is not affected.
+
+#### Supported fields
+
+Same as Step 2: `textarea` and `input` types `text`, `search`, `email`, `url`, `tel` that are visible, enabled, not readonly, and meet the minimum size. Password and other input types are excluded; the extension root (and trigger) are ignored by field detection.
+
+#### Current limitations
+
+- **Popup is not implemented.** Clicking the trigger only logs to the console.
+- **Backend is not connected.** No refinement requests are sent.
+- Tone selection, refined-text replacement, and history are not implemented.
+
+#### How to test the trigger manually
+
+1. Build and load the extension from `chrome-extension/dist`.
+2. Open a page that has a `textarea` or text input (e.g. a comment box or search field).
+3. **Focus an empty field** → trigger should **not** appear.
+4. **Type at least one character** → trigger should appear near the field (top-right or bottom-right).
+5. **Scroll the page** (with the field still focused and with text) → trigger should move with the field.
+6. **Resize the browser** → trigger should stay correctly positioned.
+7. **Delete all text** → trigger should disappear.
+8. **Blur the field** (click outside) → trigger should disappear.
+9. **Focus a password field** → trigger should never appear.
+10. On a page that dynamically removes the active field from the DOM, the trigger should disappear without errors.
+

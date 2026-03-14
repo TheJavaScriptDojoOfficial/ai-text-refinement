@@ -47,8 +47,13 @@ export default defineConfig({
         const optionsHtmlDestDir = resolve(distDir, "options");
         const optionsHtmlDest = resolve(optionsHtmlDestDir, "options.html");
 
+        const contentCssSrc = resolve(root, "src/styles/content.css");
+        const contentCssDestDir = resolve(distDir, "content");
+        const contentCssDest = resolve(contentCssDestDir, "content.css");
+
         await fs.mkdir(distDir, { recursive: true });
         await fs.mkdir(optionsHtmlDestDir, { recursive: true });
+        await fs.mkdir(contentCssDestDir, { recursive: true });
 
         try {
           await fs.copyFile(manifestSrc, manifestDest);
@@ -58,6 +63,12 @@ export default defineConfig({
 
         try {
           await fs.copyFile(optionsHtmlSrc, optionsHtmlDest);
+        } catch {
+          // ignore if missing
+        }
+
+        try {
+          await fs.copyFile(contentCssSrc, contentCssDest);
         } catch {
           // ignore if missing
         }
