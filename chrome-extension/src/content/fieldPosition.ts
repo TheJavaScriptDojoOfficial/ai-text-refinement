@@ -1,11 +1,14 @@
 import type {
   SupportedEditableElement,
-  FloatingTriggerPosition
+  FloatingTriggerPosition,
+  PopupPosition
 } from "../shared/types";
 import {
   FLOATING_TRIGGER_SIZE,
   FLOATING_TRIGGER_OFFSET_X,
-  FLOATING_TRIGGER_OFFSET_Y
+  FLOATING_TRIGGER_OFFSET_Y,
+  TONE_POPUP_OFFSET_Y,
+  TONE_POPUP_VIEWPORT_PADDING
 } from "../shared/constants";
 
 export interface FieldPosition {
@@ -94,5 +97,75 @@ export function getFieldPosition(element: HTMLElement): FieldPosition | null {
     left: rect.left + window.scrollX,
     width: rect.width,
     height: rect.height
+  };
+}
+
+/** Popup placement params: anchor from trigger element (and optional field for reference). */
+export interface GetPopupPositionParams {
+  triggerEl: HTMLElement;
+}
+
+/**
+ * Compute viewport-relative position for the tone popup anchored to the trigger.
+ * Prefer below trigger; if not enough room, place above.
+ * @param estimatedHeight Used when placing above so the popup sits fully above the trigger.
+ */
+export function getPopupPositionFromTrigger(
+  triggerEl: HTMLElement,
+  estimatedHeight: number = 320
+): PopupPosition {
+  const rect = getViewportRect(triggerEl);
+  const viewportHeight = window.innerHeight;
+  const spaceBelow = viewportHeight - (rect.bottom + TONE_POPUP_OFFSET_Y);
+  const spaceAbove = rect.top - TONE_POPUP_OFFSET_Y;
+  const preferBelow = spaceBelow >= 200 || spaceBelow >= spaceAbove;
+
+  if (preferBelow) {
+    return {
+      top: rect.bottom + TONE_POPUP_OFFSET_Y,
+      left: rect.left,
+      placement: "below-trigger"
+    };
+  }
+  return {
+    top: rect.top - TONE_POPUP_OFFSET_Y - estimatedHeight,
+    left: rect.left,
+    placement: "above-trigger"
+  };
+}
+
+/** Get popup position from trigger (and optionally clamp using estimated popup size). */
+export function getPopupPositionFromFieldOrTrigger(
+  params: GetPopupPositionParams
+): PopupPosition {
+  return getPopupPositionFromTrigger(params.triggerEl);
+}
+
+/** Clamp popup position so it stays within viewport with padding. */
+export function clampPopupToViewport(
+  position: PopupPosition,
+  popupWidth: number,
+  popupHeight: number
+): PopupPosition {
+  const padding = TONE_POPUP_VIEWPORT_PADDING;
+  const viewportWidth = window.innerWidth;
+  const viewportHeight = window.innerHeight;
+
+  let left = position.left;
+  let top = position.top;
+
+  if (left < padding) left = padding;
+  if (left + popupWidth > viewportWidth - padding) {
+    left = viewportWidth - popupWidth - padding;
+  }
+  if (top < padding) top = padding;
+  if (top + popupHeight > viewportHeight - padding) {
+    top = viewportHeight - popupHeight - padding;
+  }
+
+  return {
+    top,
+    left,
+    placement: position.placement
   };
 }

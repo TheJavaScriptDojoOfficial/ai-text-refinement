@@ -31,6 +31,25 @@ export interface ActiveFieldUiState {
   shouldShowTrigger: boolean;
 }
 
+export interface ToneOption {
+  id: string;
+  label: string;
+  description: string;
+}
+
+/** Viewport-relative position for the tone popup (position: fixed). */
+export interface PopupPosition {
+  top: number;
+  left: number;
+  placement: "below-trigger" | "above-trigger";
+}
+
+export interface PopupUiState {
+  isOpen: boolean;
+  selectedToneId: string | null;
+  anchorField: EditableFieldInfo | null;
+}
+
 export interface BackendConfig {
   backendUrl: string;
 }

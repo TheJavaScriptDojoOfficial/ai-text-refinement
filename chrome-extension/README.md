@@ -103,24 +103,18 @@ The extension includes a **field detection engine** that tracks the currently fo
 
 ### Step 3: Floating refine trigger
 
-The extension injects a **floating refine button** (✨) near the active editable field when that field has text. The trigger is used only to indicate “refine here”; the popup and backend are **not** implemented yet.
+The extension injects a **floating refine button** (✨) near the active editable field when that field has text. Clicking it opens the tone selection popup (Step 4). The backend is **not** connected yet.
 
 #### Behavior
 
 - **Show trigger:** When a supported field (textarea or text-like input) is focused **and** has at least one character of text (after trim), the trigger appears near the top-right (or bottom-right if there’s no room above) of the field.
 - **Hide trigger:** When the field is cleared, blurred, or no longer eligible (e.g. disabled), or when the field is removed from the DOM, the trigger is hidden.
 - **Positioning:** The button uses `position: fixed` and is repositioned on scroll and resize (with `requestAnimationFrame` throttling). It is clamped so it never goes outside the viewport.
-- **Click:** Clicking the trigger logs `[AI Refiner] Refine trigger clicked` and does not open a popup or call the backend yet. Clicks use `preventDefault`/`stopPropagation` so the host page is not affected.
+- **Click:** Clicking the trigger opens the tone popup (see Step 4). Clicks use `preventDefault`/`stopPropagation` so the host page is not affected.
 
 #### Supported fields
 
-Same as Step 2: `textarea` and `input` types `text`, `search`, `email`, `url`, `tel` that are visible, enabled, not readonly, and meet the minimum size. Password and other input types are excluded; the extension root (and trigger) are ignored by field detection.
-
-#### Current limitations
-
-- **Popup is not implemented.** Clicking the trigger only logs to the console.
-- **Backend is not connected.** No refinement requests are sent.
-- Tone selection, refined-text replacement, and history are not implemented.
+Same as Step 2: `textarea` and `input` types `text`, `search`, `email`, `url`, `tel` that are visible, enabled, not readonly, and meet the minimum size. Password and other input types are excluded; the extension root (trigger and popup) are ignored by field detection.
 
 #### How to test the trigger manually
 
@@ -134,4 +128,44 @@ Same as Step 2: `textarea` and `input` types `text`, `search`, `email`, `url`, `
 8. **Blur the field** (click outside) → trigger should disappear.
 9. **Focus a password field** → trigger should never appear.
 10. On a page that dynamically removes the active field from the DOM, the trigger should disappear without errors.
+
+---
+
+### Step 4: Tone selection popup
+
+Clicking the floating trigger opens a **tone selection popup** anchored to the trigger. You can choose a tone (e.g. Professional, Friendly, Concise); the choice is logged and the popup closes. **Backend is not connected** and **refined text is not applied** yet—only the popup UI and selection state are implemented.
+
+#### Behavior
+
+- **Open:** Click the ✨ trigger → popup opens below (or above) the trigger with a list of tone options.
+- **Close:** Popup closes when you click outside it, press **Escape**, click the trigger again, select a tone, or when the active field is cleared or changes.
+- **Selection:** Click a tone option → it is marked selected, `[AI Refiner] Tone selected: <toneId>` is logged, and the popup closes.
+- **Positioning:** Popup is viewport-clamped and repositions on scroll/resize while open.
+
+#### Available tones
+
+- **Professional** — Clear and work-appropriate  
+- **Friendly** — Warm and approachable  
+- **Polite** — Softer and more courteous  
+- **Concise** — Shorter and more direct  
+- **Stronger** — More confident and firm  
+- **Grammar Fix** — Correct grammar and phrasing  
+
+#### Current limitations
+
+- **Backend is not connected.** Selecting a tone only updates UI state and logs to the console.
+- **Refined text is not applied.** No API call or text replacement is performed.
+- Loading state and result preview are not implemented.
+
+#### How to test the popup manually
+
+1. Build and load the extension; focus a supported field with some text so the trigger appears.
+2. **Click the trigger** → tone popup opens near the trigger; console: `[AI Refiner] Tone popup opened`.
+3. **Click the trigger again** → popup closes; console: `[AI Refiner] Tone popup closed`.
+4. **Open popup, then click "Professional"** → console: `[AI Refiner] Tone selected: professional`; popup closes.
+5. **Open popup, then click somewhere on the page** → popup closes.
+6. **Open popup, then press Escape** → popup closes.
+7. **Open popup, then delete all text in the field** → popup closes and trigger disappears.
+8. **Open popup, then focus another text field** → popup closes; trigger updates for the new field.
+9. **Scroll or resize with popup open** → popup stays anchored and within viewport.
 

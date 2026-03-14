@@ -4,10 +4,12 @@ import type {
   OnActiveFieldValueChange,
   SupportedEditableElement
 } from "../shared/types";
-import { isEligibleEditableElement } from "./siteGuards";
+import { isEligibleEditableElement, isInsideExtensionUi } from "./siteGuards";
 import { buildEditableFieldInfo } from "./fieldValueAdapter";
 
 const FOCUSOUT_CLEAR_DELAY_MS = 50;
+/** When relatedTarget is null, check activeElement after this delay (focus may have moved to extension UI). */
+const FOCUSOUT_ACTIVE_ELEMENT_CHECK_MS = 20;
 
 export interface EditableFieldDetectorCallbacks {
   onActiveFieldChange?: OnActiveFieldChange;
@@ -100,6 +102,30 @@ export class EditableFieldDetector {
     const relatedTarget = e.relatedTarget;
     if (relatedTarget && isEligibleEditableElement(relatedTarget)) {
       this.clearFocusOutTimer();
+      return;
+    }
+    if (
+      relatedTarget &&
+      relatedTarget instanceof Element &&
+      isInsideExtensionUi(relatedTarget)
+    ) {
+      this.clearFocusOutTimer();
+      return;
+    }
+    if (relatedTarget === null || relatedTarget === undefined) {
+      this.clearFocusOutTimer();
+      this.focusoutClearTimer = setTimeout(() => {
+        this.focusoutClearTimer = null;
+        const activeEl = document.activeElement;
+        if (
+          activeEl &&
+          activeEl instanceof Element &&
+          isInsideExtensionUi(activeEl)
+        ) {
+          return;
+        }
+        this.setActiveField(null);
+      }, FOCUSOUT_ACTIVE_ELEMENT_CHECK_MS);
       return;
     }
     this.clearFocusOutTimer();

@@ -37,3 +37,23 @@ export const FLOATING_TRIGGER_OFFSET_Y = 8;
 export const FLOATING_TRIGGER_Z_INDEX = 2147483647;
 /** Use requestAnimationFrame for scroll/resize position updates. */
 export const POSITION_UPDATE_RAF = true;
+
+/** Tone popup UI constants. */
+export const TONE_POPUP_ID = "ai-refiner-tone-popup";
+export const TONE_POPUP_MIN_WIDTH = 220;
+export const TONE_POPUP_MAX_WIDTH = 280;
+export const TONE_POPUP_Z_INDEX = 2147483647;
+export const TONE_POPUP_OFFSET_Y = 10;
+export const TONE_POPUP_VIEWPORT_PADDING = 8;
+
+export const TONE_POPUP_CLASS = "ai-refiner-popup";
+export const TONE_POPUP_HIDDEN_CLASS = "ai-refiner-popup--hidden";
+
+export const DEFAULT_TONE_OPTIONS = [
+  { id: "professional", label: "Professional", description: "Clear and work-appropriate" },
+  { id: "friendly", label: "Friendly", description: "Warm and approachable" },
+  { id: "polite", label: "Polite", description: "Softer and more courteous" },
+  { id: "concise", label: "Concise", description: "Shorter and more direct" },
+  { id: "stronger", label: "Stronger", description: "More confident and firm" },
+  { id: "grammar", label: "Grammar Fix", description: "Correct grammar and phrasing" }
+] as const;
