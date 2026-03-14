@@ -26,15 +26,23 @@ function logActiveFieldCleared(): void {
 }
 
 async function runContentScript(): Promise<void> {
+  const win = window as unknown as { __aiRefinerDetector?: unknown };
+  if (win.__aiRefinerDetector) {
+    return;
+  }
+  if (!document.body) {
+    return;
+  }
+
   const settings = await getSettings();
   const hostname = window.location.hostname;
 
   if (!settings.enabled) {
-    console.log(`${LOG_PREFIX} Extension disabled by settings`);
+    console.log(`${LOG_PREFIX} Inactive: extension disabled by settings`);
     return;
   }
   if (isDomainBlacklisted(hostname, settings.domainBlacklist)) {
-    console.log(`${LOG_PREFIX} Extension inactive on blacklisted domain: ${hostname}`);
+    console.log(`${LOG_PREFIX} Inactive: blacklisted domain (${hostname})`);
     return;
   }
 
@@ -78,9 +86,8 @@ async function runContentScript(): Promise<void> {
   detector.start();
   controller.start(detector);
 
-  console.log(
-    `${LOG_PREFIX} Content script active; field detector and trigger started.`
-  );
+  win.__aiRefinerDetector = detector;
+  console.log(`${LOG_PREFIX} Initialized successfully`);
 
   if (STARTUP_HEALTH_CHECK_ENABLED) {
     void apiClient.checkHealth(true, "startup").then((result) => {
@@ -93,9 +100,6 @@ async function runContentScript(): Promise<void> {
       }
     });
   }
-
-  (window as unknown as { __aiRefinerDetector?: EditableFieldDetector }).__aiRefinerDetector =
-    detector;
 }
 
 void runContentScript();

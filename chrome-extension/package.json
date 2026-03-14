@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "vite build --watch",
     "build": "vite build --config vite.content.config.ts && vite build",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist",
+    "package:zip": "npm run build && (cd dist && zip -rq ../chrome-extension-release.zip .)"
   },
   "devDependencies": {
     "@types/chrome": "^0.0.279",

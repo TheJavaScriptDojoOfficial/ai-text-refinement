@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI Refiner – Demo / Manual Test Page</title>
+    <style>
+      body { font-family: system-ui, sans-serif; max-width: 640px; margin: 2rem auto; padding: 0 1rem; }
+      h1 { font-size: 1.25rem; }
+      section { margin-bottom: 1.5rem; }
+      label { display: block; margin-bottom: 0.25rem; font-weight: 500; }
+      input, textarea { width: 100%; padding: 0.5rem; box-sizing: border-box; }
+      textarea { min-height: 4rem; resize: vertical; }
+      .hint { font-size: 0.85rem; color: #666; margin-top: 0.25rem; }
+    </style>
+  </head>
+  <body>
+    <h1>AI Refiner – Demo / Manual Test Page</h1>
+    <p>Load the extension and use this page to test field detection, trigger, popup, and refinement. Serve this file over HTTP (e.g. <code>npx serve dev --port 3000</code>) so the content script can run.</p>
+
+    <section>
+      <label for="text-input">Text input (supported)</label>
+      <input type="text" id="text-input" placeholder="Type here to see the refine trigger" />
+      <p class="hint">Focus and type; trigger should appear. Select a tone to refine.</p>
+    </section>
+
+    <section>
+      <label for="textarea">Textarea (supported)</label>
+      <textarea id="textarea" placeholder="Multi-line text for refinement"></textarea>
+      <p class="hint">Supported. Trigger appears when there is text.</p>
+    </section>
+
+    <section>
+      <label for="password">Password input (ignored)</label>
+      <input type="password" id="password" placeholder="Password – extension should not show trigger" />
+      <p class="hint">Password fields are excluded; no trigger here.</p>
+    </section>
+
+    <section>
+      <label for="readonly">Readonly textarea (ignored)</label>
+      <textarea id="readonly" readonly>This is readonly. Extension should not activate.</textarea>
+      <p class="hint">Readonly fields are excluded.</p>
+    </section>
+
+    <section>
+      <label for="disabled">Disabled input (ignored)</label>
+      <input type="text" id="disabled" value="Disabled field" disabled />
+      <p class="hint">Disabled fields are excluded.</p>
+    </section>
+
+    <section>
+      <label for="long">Long textarea (scroll test)</label>
+      <textarea id="long" placeholder="Add several lines and scroll the page to test trigger positioning"></textarea>
+      <p class="hint">Add many lines, then scroll; trigger should stay aligned with the field.</p>
+    </section>
+  </body>
+</html>

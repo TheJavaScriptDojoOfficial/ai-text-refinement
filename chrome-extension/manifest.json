@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Local AI Text Refiner",
-  "description": "Refine text on any website using your local LLM.",
+  "description": "Refine text on websites using your local LLM backend.",
   "version": "0.1.0",
   "icons": {
     "16": "icons/icon16.png",

@@ -1,8 +1,33 @@
 ## Local AI Text Refiner – Chrome Extension
 
-This Chrome extension lets you refine text on any website using your **local LLM backend** from the AI Text Refinement Tool. It detects editable fields, shows a floating refine trigger and tone popup, calls your local backend to refine the text, and inserts the result into the field.
+Refine text on any website using your **local LLM backend**. The extension detects supported editable fields, shows a floating refine trigger and tone popup, sends text to your local backend, and replaces the field content with the refined result.
 
-### How to install dependencies
+### What it does
+
+- **Detects** supported text fields (textarea and text-like inputs) when focused.
+- **Shows** a floating refine trigger (✨) when the field has text.
+- **Opens** a tone popup (Professional, Friendly, Concise, etc.) on trigger click.
+- **Sends** the current field text and selected tone to your local backend API.
+- **Replaces** the field text with the refined result on success.
+
+### Current MVP support
+
+- **Fields:** `textarea`, `input` types: text, search, email, url, tel (visible, enabled, not readonly).
+- **Backend:** Local Python API (health + refine endpoints); configurable URL and timeout.
+- **Settings:** Options page; all settings stored in `chrome.storage.local` (backend URL, timeout, default tone/length, preserve flags, enabled, auto-show trigger, domain blacklist).
+- **Error handling:** Unreachable, timeout, model not ready, invalid response; loading and stale-request guards.
+
+### Not supported yet
+
+- Contenteditable / rich editors (Gmail, Slack, Teams, etc.).
+- Diff preview, refinement history, or undo stack.
+- Sync storage, per-site custom settings, or live settings sync across tabs.
+
+---
+
+### Local development
+
+#### Install dependencies
 
 From the `chrome-extension` directory:
 
@@ -27,6 +52,15 @@ npm run build
 ```
 
 The compiled extension assets (background, content script, options page, manifest, and icons) will be output into the `dist/` directory.
+
+#### Demo page for manual testing
+
+A static demo page with various field types is in `dev/demo.html`. It is **not** part of the build output. To use it:
+
+- Serve it over HTTP (e.g. `npx serve dev --port 3000` from the `chrome-extension` directory) and open the shown URL, or
+- Use any test page (e.g. [Evil Tester form](https://testpages.eviltester.com/pages/forms/html-form/)) that has text inputs and textareas.
+
+The demo page includes: a text input, a textarea, a password input (ignored by the extension), a readonly textarea, a disabled input, and a long textarea for scroll/position testing.
 
 ### How to load the extension in Chrome
 
@@ -56,7 +90,7 @@ The extension is designed to talk to the existing **Python backend** that powers
 2. In **Local AI Text Refiner Settings**:
    - Set the **Backend URL** (e.g. `http://127.0.0.1:8000`).
    - Click **Save**.
-3. The URL is persisted in `chrome.storage.sync`, and internal code (e.g. `backendClient.ts`) will read this value when making calls to the backend.
+3. The URL is persisted in `chrome.storage.local`, and the extension reads it when making backend calls.
 
 The extension sends refinement requests when you select a tone; see **Step 5** below for the full flow.
 
@@ -84,7 +118,7 @@ The extension includes a **field detection engine** that tracks the currently fo
 
 1. Load the extension from `chrome-extension/dist` (see above).
 2. Open any page and open **DevTools → Console** (page context, not extension context).
-3. You should see: `[AI Refiner] Content script active; field detector started.`
+3. You should see: `[AI Refiner] Initialized successfully`
 4. **Focus a `textarea`** (e.g. a comment box). You should see:  
    `[AI Refiner] Active field detected: { type: textarea, valueLength: N }`
 5. **Type in that field.** You should see:  
@@ -289,4 +323,73 @@ All of these appear as inline popup errors so the user can retry or adjust setti
 | **Model not ready** | Backend may be still loading the model. Wait and retry, or check backend logs. |
 | **Timeout** | Increase "Request Timeout (ms)" in options. Default 30000; min 1000, max 300000. |
 | **Invalid backend URL** | Use `http://` or `https://` and a valid host/port. No trailing path unless your API lives under a subpath. |
+| **Trigger not showing** | Focus a supported field (textarea or text input), ensure it has at least one character, and that the field is not disabled/readonly. Check that "Auto-show refine trigger" is on in options. |
+| **Site blacklisted / extension disabled** | In options, ensure "Enable extension" is on and the current site’s hostname is not in the blacklist. Reload the page after changing these settings. |
+
+---
+
+### Manual testing checklist (QA)
+
+Use this to verify the extension after changes.
+
+**Happy path**
+
+- [ ] Supported field detected (focus textarea or text input → console shows active field).
+- [ ] Trigger appears when field has text.
+- [ ] Popup opens on trigger click.
+- [ ] Tone selected → backend request sent, loading state shown.
+- [ ] Successful response → refined text applied to field, popup closes.
+
+**Failure path**
+
+- [ ] Backend unreachable → popup shows error, remains usable.
+- [ ] Backend timeout → loading clears, timeout error shown, retry works.
+- [ ] Model not ready → appropriate error shown.
+- [ ] Invalid backend URL → error shown (options test or refine).
+- [ ] Replacement failure (e.g. field removed) → logged, no crash.
+
+**Settings path**
+
+- [ ] Save settings → values persist after reloading options page.
+- [ ] Reset to defaults → form and storage reset.
+- [ ] Test Backend Connection → clear success/failure message, button disabled during test.
+- [ ] Blacklist current hostname → after reload, extension inactive on that site.
+- [ ] Disable extension → after reload, content script inactive.
+
+**Note:** Changes to **Enable extension** or **Domain blacklist** apply after you reload the tab or navigate; already-open tabs do not update live.
+
+---
+
+### Packaging
+
+- **Build output:** `chrome-extension/dist/` contains the compiled extension (manifest, background, content script, options, CSS, icons from `public/`).
+- **Load unpacked:** In Chrome go to `chrome://extensions/` → Developer mode → Load unpacked → select the `dist` folder.
+- **Release zip (optional):** Run `npm run package:zip` to produce `chrome-extension-release.zip` from the contents of `dist/`. Requires `zip` on the path (macOS/Linux). Useful for sharing the extension without the repo.
+
+---
+
+### MVP acceptance checklist
+
+- [ ] Build completes (`npm run build`).
+- [ ] Extension loads unpacked in Chrome from `dist/` with no missing assets.
+- [ ] No console errors on startup on an allowed page.
+- [ ] Supported fields work (trigger, popup, refine, replacement).
+- [ ] Options page loads and save/reset/test work.
+- [ ] Backend integration works when backend is running.
+- [ ] Error handling is stable (unreachable, timeout, invalid response).
+- [ ] README explains setup, use, and troubleshooting.
+- [ ] Existing behavior has not regressed.
+
+---
+
+### Step 9: MVP polish and packaging
+
+Step 9 adds testing support, packaging readiness, and stability polish without changing working behavior.
+
+- **Duplicate-init guard:** Content script skips initialization if already running (single root, no double injection).
+- **Console logs:** Stable `[AI Refiner]` prefix; "Initialized successfully", "Inactive: extension disabled by settings", "Inactive: blacklisted domain", "Backend healthy / not ready / unreachable", "Refinement succeeded / failed", "Ignoring stale refine result", "Replacement failed".
+- **Scripts:** `npm run clean` (remove `dist/`), `npm run package:zip` (build then zip `dist` into `chrome-extension-release.zip`; requires `zip` on PATH).
+- **Demo page:** `dev/demo.html` for manual testing (serve over HTTP; not included in extension build).
+- **Options:** Helper text notes that enabled/blacklist changes may require a page reload on already-open tabs.
+- **README:** What it does, MVP support, not supported, local dev, manual testing checklist, packaging, troubleshooting, and MVP acceptance checklist.
 
